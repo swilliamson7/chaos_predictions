@@ -21,3 +21,7 @@ Attempting to run both a modified adjoint method as well as a combination of mac
  4. We can try (3) with different methods/models, maybe Lorenz 86 and 96? 
  
  5. The last thing we want to try is to train a neural network on the results of a data assimilation scheme, similar to what was done in yet more papers.
+ 
+    (a) set up neural network to learn from the results of a DA scheme 
+    
+    (b) learn machine learning
