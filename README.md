@@ -4,7 +4,7 @@ Attempting to run both a modified adjoint method as well as a combination of mac
 
 00. Read the papers Patrick sent
 
-0. Try setting up the chaotic pendulum problem the way that they did in the paper, just as a learning tool. 
+0. Maybe try setting up the chaotic pendulum problem the way that they did in the paper, just as a learning tool. 
 
     (a) could help to understand what controllability means in this context. 
 
