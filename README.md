@@ -12,11 +12,11 @@ Attempting to run both a modified adjoint method as well as a combination of mac
 
 3. Thinking about how we can use "controllability" to minimize cost function using the gradient that was found in part 2. This will entail 
 
-        (a) thinking about how the pendulum paper accomplished their task. 
+    (a) thinking about how the pendulum paper accomplished their task. 
         
-        (b) thinking about how to set up the same experiment with the Lorenz model, especially considering that we don't have forcing. 
+    (b) thinking about how to set up the same experiment with the Lorenz model, especially considering that we don't have forcing. 
         
-        (c) how to set it up for parameter estimation, and not forcing estimation. 
+    (c) how to set it up for parameter estimation, and not forcing estimation. 
         
  4. We can try (3) with different methods/models, maybe Lorenz 86 and 96? 
  
