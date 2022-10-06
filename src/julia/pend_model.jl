@@ -101,7 +101,6 @@ end
 function adjoint(data_steps, data, dt, T, f, g, state0, q0, l0)
 
 # first run the entire forward problem 
-
 states = zeros(2, Int(T/dt))
 states[:, 1] = state0
 
@@ -112,7 +111,6 @@ end
 
 # next we want to run the adjoint problem backward and compute 
 # the adjoint variables 
-
 adjoint_variables = zeros(2, Int(T/dt))
 
 for k = Int(T/dt)-1:-1:1
@@ -122,6 +120,8 @@ for k = Int(T/dt)-1:-1:1
     d_state_now = ad_step(dt, f(k * dt), g, q0, l0, states[:,k], adjoint_old)
     adjoint_variables[:,k] .= d_state_now[:]
 
+    # this statement checks if we have a data point at the current iteration, and if so adjusts
+    # the adjoint value 
     if k in data_steps 
 
         adjoint_variables[2,k] = adjoint_variables[2,k] + 1/(length(data_steps)) * (states[2,k] - data[2,k])^2 
