@@ -41,7 +41,7 @@ end
 # Function for Enzyme (needs to return nothing)
 # just runs the above forward step function, but doesn't
 # return the output, will be what we apply Enzyme to. 
-# Needs the inputs:
+# Inputs: 
 #       dt - timestep
 #       f - forcing *value* at the current iteration 
 #       g - gravitational acceleration  
@@ -50,6 +50,7 @@ end
 #       state_now - state at the current iteration 
 #       state_new - output of the forward function, given the above
 #                   inputs 
+# Outputs: nothing 
 function ad_forward(dt, f, g, q, l, state_now, state_new) 
 
     state_new = forward_step(dt, f, g, state_now, q, l)
@@ -60,7 +61,8 @@ end
 
 
 # Function mainly for convenience, this will run one single adjoint 
-# step for us. Needs the inputs:
+# step for us. 
+# Inputs: 
 #       dt - timestep
 #       f - forcing *value* at the current iteration 
 #       g - gravitational acceleration
@@ -69,6 +71,8 @@ end
 #       l_guess - pendulum length, same as above 
 #       state_now - state at the current iteration 
 #       d_state_new - the prior (formally future) adjoint value 
+# Outputs: 
+#       d_state_now - the new adjoint variable 
 function ad_step(dt, f, g, q_guess, l_guess, state_now, d_state_new)
     
     d_state_now = zeros(2) 
