@@ -98,6 +98,11 @@ end
 #       state0 - initial state of the system 
 #       q0 - initial guess for q, the damping coefficient
 #       l0 - initial guess for l, the pendulum length 
+# Outputs: 
+#       states - all of the results from the forward run with the 
+#                inputted parameters
+#       adjoint_variables - the adjoint variables (Lagrange multipliers)
+#                that were computed 
 function adjoint(data_steps, data, dt, T, f, g, state0, q0, l0)
 
 # first run the entire forward problem 
