@@ -28,7 +28,7 @@ class MLP(pl.LightningModule):
 
         # Get the last dim of last hidden layer
         last_dim = hidden_params[-1][-1]
-        self.output = nn.Linear(last_dim, 1, bias=True)
+        self.output = nn.Linear(last_dim, 2, bias=True)
 
         # Initialize weights
         for m in self.modules():

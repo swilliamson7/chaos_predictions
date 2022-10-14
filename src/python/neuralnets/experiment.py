@@ -16,7 +16,8 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from mlp import MLP
 from data import create_pytorch_data, create_dataset
 from pdb import set_trace
-from plotting import plot_dataset, plot_series
+from plotting import plot_dataset, plot_series, plot_scatter
+import matplotlib.pyplot as plt
 
 np.random.seed(42)
 pl.seed_everything(42)
@@ -71,10 +72,9 @@ def grid_search_network():
     hidden_params = []
     for n1 in nh1:
         for n2 in nh2:
-            hidden_params.append([(6, n1), (n1, n2)])
+            hidden_params.append([(500, n1), (n1, n2)])
 
     grid_search_result = []
-    set_trace()
 
     for hp in hidden_params:
         n1, n2 = hp[0][-1], hp[-1][-1]
@@ -166,7 +166,6 @@ def run_experiment(config: Config):
 
     # 1. Create the model
     model = MLP(hidden_params=config.hidden_params, configs=config)
-    set_trace()
     if inspect_weights:
         init_weights = model.get_weights()
         fn = os.path.join(ckpt_dir, 'init_weights.npy')
@@ -198,17 +197,39 @@ def run_experiment(config: Config):
     test_loss = trainer.test(model, test_loader)
 
     # 6. Plot prediction on dataset
+    set_trace()
     for idx, (patterns, targets) in enumerate(val_loader):
         if idx > 0:
             raise ValueError('There should be only a single test batch')
 
         model.eval()
         predictions = model.predict(patterns)
-        t = np.arange(1, 201)
-        plot_series(
-            t, [(targets, 'Groundtruth'), (predictions, 'Predictions')],
-            title='Predictions on Test Data',
-            filename=os.path.join(ckpt_dir, 'test_predictions.pdf'))
+        t = np.arange(1, 101)
+        #plot_series(
+        #    t, [(targets, 'Groundtruth'), (predictions, 'Predictions')],
+        #    title='Predictions on Test Data',
+        #    filename=os.path.join(ckpt_dir, 'test_predictions.pdf'))
+        plot_scatter(targets, predictions, 
+                     filename=os.path.join(ckpt_dir, 'test_predictions.pdf'),
+                     display=True)
+
+    if True:
+        fn = os.path.join(ckpt_dir, 'targets.npy')
+        with open(fn, 'wb') as f:
+            np.save(f, targets)
+        fn = os.path.join(ckpt_dir, 'predictions.npy')
+        with open(fn, 'wb') as f:
+            np.save(f, predictions)
+        train_omega=np.array(train_loader.dataset.tensors[0])
+        train_theta=np.array(train_loader.dataset.tensors[1])
+
+        fn = os.path.join(ckpt_dir, 'train_omega.npy')
+        with open(fn, 'wb') as f:
+            np.save(f, train_omega)
+
+        fn = os.path.join(ckpt_dir, 'train_theta.npy')
+        with open(fn, 'wb') as f:
+            np.save(f, train_theta)
 
     # 7. Dump the config
     exp_data = {
@@ -226,4 +247,22 @@ def run_experiment(config: Config):
     }
 
 if __name__ == '__main__':
-    grid_search_network()
+    # grid_search_network()
+
+    global config
+    config = Config(**{
+        'task_name': 'matt_test',
+        'learning_rate': 0.1,
+        'momentum': 0.9,
+        'epochs': 1000,
+        'early_stopping': True,
+    })
+    hidden_params = []
+    hidden_params.append([(100, 2), (2, 2)])
+
+    for hp in hidden_params:
+        n1, n2 = hp[0][-1], hp[-1][-1]
+        setattr(config, 'experiment_name', f'h{n1}_h{n2}')
+        setattr(config, 'hidden_params', hp)
+        create_exp_dir(task_name=config.task_name, experiment_name=config.experiment_name)
+        losses = run_experiment(config)

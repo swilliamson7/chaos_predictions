@@ -7,6 +7,7 @@ from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pdb import set_trace
 
 sns.set_style('whitegrid')
 np.random.seed(1)
@@ -70,3 +71,42 @@ def plot_series(t, series, title: Optional[str] = None, filename: Optional[str] 
         plt.show()
     else:
         plt.close()
+
+
+def plot_scatter(targets, predictions, filename: Optional[str] = None, display: Optional[bool] = False):
+    fig = plt.figure(figsize=(8, 5))
+
+    wTrue=targets[:,0]
+    thetaTrue=targets[:,1]
+    wPred=predictions[:,0]
+    thetaPred=predictions[:,1]
+    L = len(wTrue)
+    
+    ax1 = plt.subplot(1,2,1)
+    ax1.scatter(range(L), wTrue, label='$\omega$ true')
+    ax1.scatter(range(L), wPred, label='$\omega$ pred')
+    ax1.legend()
+    ax1.set_title('$\omega$ Predictions on Test Data', fontsize=16, pad=12)
+    ax1.set_xlabel("trajectory number")
+    ax1.set_ylabel("$\omega$")
+
+    ax2 = plt.subplot(1,2,2)
+    ax2.scatter(range(L), thetaTrue, label='$\\theta$ true')
+    ax2.scatter(range(L), thetaPred, label='$\\theta$ pred')
+    ax2.legend()
+    ax2.set_title('$\\theta$ Predictions on Test Data', fontsize=16, pad=12)
+    ax2.set_xlabel("trajectory number")
+    ax2.set_ylabel("$\\theta$")
+
+    if filename:
+        fig.savefig(filename, bbox_inches='tight')
+
+    if display:
+        plt.show()
+    else:
+        plt.close()
+
+if __name__ == '__main__':
+    targets=np.random.normal(0,1,(20, 2))
+    predictions=np.random.normal(0,1,(20, 2))
+    plot_scatter(targets, predictions, display=True)
