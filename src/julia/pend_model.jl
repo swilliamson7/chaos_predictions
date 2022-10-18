@@ -35,8 +35,24 @@ function forward_step(dt, f, g, state_now, q, l)
                  copy(theta_new)]
                  
     return state_new 
+
 end
 
+function generate_data(T, dt, f, g, state0, q, l)
+
+    all_states = zeros(2, T+1)
+    all_states[:, 1] = state0
+
+    for j = 2:T+1
+
+        state_new = forward_step(dt, f, g, all_states[:, j-1], q, l)
+        all_states[:, j] = state_new
+
+    end
+
+    return all_states
+
+end
 
 # Function for Enzyme (needs to return nothing)
 # just runs the above forward step function, but doesn't
