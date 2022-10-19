@@ -1,6 +1,7 @@
 using Flux, Statistics
 using Flux.Data: DataLoader
 using Flux: onehotbatch, onecold, logitcrossentropy, throttle, @epochs
+using Flux.Losses: mse
 using Base.Iterators: repeated
 using Parameters: @with_kw
 using CUDA
@@ -39,46 +40,46 @@ function generate_dataset(N_data, T, dt, b, g, state0, q, l)
 
 end
 
-function split_dataset(trajectories, params, n_train, n_validation, n_test)
+function split_dataset(trajectories, params, Args)
 
-    x_train = trajectories[1:n_train, 1:end]
-    x_validation = trajectories[n_train+1:n_validation, 1:end]
-    x_test = trajectories[n_validation+1:n_test, 1:end]
+    x_train = trajectories[1:Args.n_train, 1:end]
+    x_test = trajectories[Args.n_train+1:Args.n_test+Args.n_train, 1:end]
+    x_validation = trajectories[Args.n_train+Args.n_test+1:end, 1:end]
 
-    y_train = params[1:n_train]
-    y_validation = params[n_train+1:n_validation]
-    y_test = params[n_validation+1:n_test]
+    y_train = params[1:Args.n_train]
+    y_test = params[Args.n_train+1:Args.n_test+Args.n_train]
+    y_validation = params[Args.n_train + Args.n_test + 1:end]
 
-    return x_train, y_train, x_validation, y_validation, x_test, y_test
+    return x_train, y_train, x_test, y_test, x_validation, y_validation
 
 end
 
-function getdata(trajectories, params, n_train, n_validation, n_test, args)
+function getdata(trajectories, params, Args)
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
     # Loading Dataset	
 
-    x_train, y_train, x_validation, y_validation, x_test, y_test = split_dataset(trajectories, params, n_train, n_validation, n_test)
+    x_train, y_train, x_test, y_test, x_validation, y_validation = split_dataset(trajectories, params, Args)
 
     # xtrain, ytrain = # MLDatasets.MNIST.traindata(Float32)
     # xtest, ytest =  # MLDatasets.MNIST.testdata(Float32)
 	
     # Reshape Data in order to flatten each image into a linear array
-    x_train = Flux.flatten(x_train)
-    x_test = Flux.flatten(x_test)
+    x_train = x_train'
+    x_test = x_test'
 
     # # One-hot-encode the labels
     # ytrain, ytest = onehotbatch(ytrain, 0:9), onehotbatch(ytest, 0:9)
 
     # Batching
-    train_data = DataLoader((x_train, y_train), batchsize=args.batchsize, shuffle=true)
-    test_data = DataLoader((x_test, y_test), batchsize=args.batchsize)
-    validation_data = DataLoader((x_validation, y_validation), batchsize=args.batchsize)
+    train_data = DataLoader((x_train, y_train), batchsize=Args.batchsize, shuffle=true)
+    test_data = DataLoader((x_test, y_test), batchsize=Args.batchsize)
+    #validation_data = DataLoader((x_validation, y_validation), batchsize=Args.batchsize)
 
     return train_data, test_data #, validation_data
 end
 
-function build_model(; trajectory_size=100, param_out=1)
+function build_model(; trajectory_size=101, param_out=1)
     return Chain(
  	    Dense(prod(trajectory_size), 32, relu),
             Dense(32, param_out))
@@ -92,14 +93,29 @@ end
 #     L/length(dataloader)
 # end
 
-function loss_all(dataloader, model)
+# function loss_all(dataloader, model)
 
-    L = 0f0
+#     L = 0f0
 
-    for (x,y) in dataloader
-        L += mse(model(x), y)
+#     for (x,y) in dataloader
+#         L += mse(model(x), y)
+#     end
+
+# end
+
+function loss_all(data_loader, model, device)
+    #acc = 0
+    ls = 0.0f0
+    num = 0
+    for (x, y) in data_loader
+        y = reshape(y, 1, length(y))
+        x, y = device(x), device(y)
+        ŷ = model(x)
+        ls += mse(ŷ, y, agg=sum)
+        #acc += sum(onecold(ŷ) .== onecold(y)) ## Decode the output of the model
+        num +=  size(x)[end]
     end
-
+    return ls / num #acc / num
 end
 
 # function accuracy(data_loader, model)
@@ -112,28 +128,50 @@ end
 
 function train(trajectories, params, Args)
     # Initializing model parameters 
-    args = Args(1000, 2000, 2000, 3e-4, 200, 10, gpu)
+    args = Args(4000, 5000, 4000, 3e-4, 200, 10, gpu)
+
+    if CUDA.functional() && args.use_cuda
+        @info "Training on CUDA GPU"
+        CUDA.allowscalar(false)
+        device = gpu
+    else
+        @info "Training on CPU"
+        device = cpu
+    end
 
     # Load Data
-    train_data, test_data = getdata(trajectories, params, args.n_train, args.n_validation, args.n_test, args)
+    train_data, test_data = getdata(trajectories, params, args)
 
-    # Construct model
-    m = build_model()
-    train_data = args.device.(train_data)
-    test_data = args.device.(test_data)
-    m = args.device(m)
+    ## Construct model
+    model = build_model() |> device
+    ps = Flux.params(model) ## model's trainable parameters
+
     loss(x,y) = mse(m(x), y)
-    
+
     ## Training
-    evalcb = () -> @show(loss_all(train_data, m))
+    evalcb = () -> @show(loss_all(train_data, m, device))
     opt = ADAM(args.η)
 		
-    @epochs args.epochs Flux.train!(loss, params(m), train_data, opt, cb = evalcb)
+    for epoch in 1:args.epochs
+        for (x, y) in train_data
+            y = reshape(y, 1, length(y))
+            x, y = device(x), device(y) ## transfer data to device
+            gs = gradient(() -> mse(model(x), y), ps) ## compute gradient
+            Flux.Optimise.update!(opt, ps, gs) ## update parameters
+        end
+        
+        ## Report on train and test
+        train_loss = loss_all(train_data, model, device)
+        test_loss = loss_all(test_data, model, device)
+        println("Epoch=$epoch")
+        println("  train_loss = $train_loss")#, train_accuracy = $train_acc")
+        println("  test_loss = $test_loss")#, test_accuracy = $test_acc")
+    end
 
-    # @show accuracy(train_data, m)
+    # # @show accuracy(train_data, m)
 
-    # @show accuracy(test_data, m)
+    # # @show accuracy(test_data, m)
 
-    # return train_data, test_data
+    return train_data, test_data
 
 end

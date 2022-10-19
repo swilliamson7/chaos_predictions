@@ -6,7 +6,7 @@ using Parameters: @with_kw
 using CUDA
 using MLDatasets
 
-using Enzyme, JLD2, Random 
+using JLD2, Random 
 
 include("pend_model.jl")
 include("netural_net_one.jl")

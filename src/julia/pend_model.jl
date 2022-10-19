@@ -1,5 +1,3 @@
-using Enzyme
-
 # fixed parameters of the system 
 const g = 9.81          # gravity coefficient, meters^2 / second
 const w_d = 2/3         # forcing frequency, 1 / second 
