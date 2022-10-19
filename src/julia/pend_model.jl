@@ -21,13 +21,13 @@ f(t) = b * cos( w_d * t )
 #           state_now - state vector at the current iteration 
 #           q - damping coefficient 
 #           l - pendulum length 
-function forward_step(dt, f, g, state_now, q, l)
+function forward_step(dt, k, b, w_d, g, state_now, q, l)
 
     omega_new = 0.0
     theta_new = 0.0
 
     omega_new = (1 - dt/q) * state_now[1] - 
-                (g * sin(state_now[2])/l + f) * dt
+                (g * sin(state_now[2])/l + b * cos(w_d * dt * k)) * dt 
 
     theta_new = dt * state_now[1] + state_now[2]
 
@@ -38,15 +38,28 @@ function forward_step(dt, f, g, state_now, q, l)
 
 end
 
-function generate_data(T, dt, f, g, state0, q, l)
+# Creates data that we can use to train our neural network, 
+# it returns one specific trajectory with a given q and l and returns 
+# what that trajectory was at every step. 
+# Input: 
+#           T - total steps to take 
+#           dt - timestep 
+#           f - forcing function 
+#           g - gravitational acceleration
+#           state0 - initial state of the system 
+#           q - damping coefficient
+#           l - length of the pendulum 
+# Output:
+#           all_states - all the states of the system, from t = 1 to T 
+function generate_trajectory(T, dt, k, b, g, state0, q, l)
 
     all_states = zeros(2, T+1)
     all_states[:, 1] = state0
 
     for j = 2:T+1
 
-        state_new = forward_step(dt, f, g, all_states[:, j-1], q, l)
-        all_states[:, j] = state_new
+        state_new = forward_step(dt, k, b, w_d, g, all_states[:, j-1], q, l)
+        all_states[:, j] = state_new[:]
 
     end
 
@@ -67,13 +80,13 @@ end
 #       state_new - output of the forward function, given the above
 #                   inputs 
 # Outputs: nothing 
-function ad_forward(dt, f, g, q, l, state_now, state_new) 
+# function ad_forward(dt, f, g, q, l, state_now, state_new) 
 
-    state_new = forward_step(dt, f, g, state_now, q, l)
+#     state_new = forward_step(dt, f, g, state_now, q, l)
 
-    return nothing
+#     return nothing
 
-end 
+# end 
 
 
 # Function mainly for convenience, this will run one single adjoint 
