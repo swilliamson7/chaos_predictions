@@ -32,6 +32,4 @@ mutable struct Args
     device::Function   # set as gpu, if gpu available
 end
 
-Args(1000, 2000, 2000, 3e-4, 200, 10, gpu)
-
 train(trajectories, params, Args)

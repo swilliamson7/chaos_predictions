@@ -111,22 +111,22 @@ end
 # end
 
 function train(trajectories, params, Args)
-    # # Initializing model parameters 
-    # args = Args(1000, 2000, 2000, 3e-4, 200, 10, gpu)
+    # Initializing model parameters 
+    args = Args(1000, 2000, 2000, 3e-4, 200, 10, gpu)
 
     # Load Data
-    train_data,test_data = getdata(trajectories, params, Args.n_train, Args.n_validation, Args.n_test)
+    train_data, test_data = getdata(trajectories, params, args.n_train, args.n_validation, args.n_test)
 
     # Construct model
     m = build_model()
-    train_data = Args.device.(train_data)
-    test_data = Args.device.(test_data)
-    m = Args.device(m)
+    train_data = args.device.(train_data)
+    test_data = args.device.(test_data)
+    m = args.device(m)
     loss(x,y) = mse(m(x), y)
     
     ## Training
     evalcb = () -> @show(loss_all(train_data, m))
-    opt = ADAM(Args.η)
+    opt = ADAM(args.η)
 		
     @epochs args.epochs Flux.train!(loss, params(m), train_data, opt, cb = evalcb)
 
