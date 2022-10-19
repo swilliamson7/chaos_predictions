@@ -53,7 +53,7 @@ function split_dataset(trajectories, params, n_train, n_validation, n_test)
 
 end
 
-function getdata(trajectories, params, n_train, n_validation, n_test)
+function getdata(trajectories, params, n_train, n_validation, n_test, args)
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
     # Loading Dataset	
@@ -63,9 +63,9 @@ function getdata(trajectories, params, n_train, n_validation, n_test)
     # xtrain, ytrain = # MLDatasets.MNIST.traindata(Float32)
     # xtest, ytest =  # MLDatasets.MNIST.testdata(Float32)
 	
-    # # Reshape Data in order to flatten each image into a linear array
-    # xtrain = Flux.flatten(x_train)
-    # xtest = Flux.flatten(x_test)
+    # Reshape Data in order to flatten each image into a linear array
+    x_train = Flux.flatten(x_train)
+    x_test = Flux.flatten(x_test)
 
     # # One-hot-encode the labels
     # ytrain, ytest = onehotbatch(ytrain, 0:9), onehotbatch(ytest, 0:9)
@@ -75,7 +75,7 @@ function getdata(trajectories, params, n_train, n_validation, n_test)
     test_data = DataLoader((x_test, y_test), batchsize=args.batchsize)
     validation_data = DataLoader((x_validation, y_validation), batchsize=args.batchsize)
 
-    return train_data, test_data, validation_data
+    return train_data, test_data #, validation_data
 end
 
 function build_model(; trajectory_size=100, param_out=1)
@@ -115,7 +115,7 @@ function train(trajectories, params, Args)
     args = Args(1000, 2000, 2000, 3e-4, 200, 10, gpu)
 
     # Load Data
-    train_data, test_data = getdata(trajectories, params, args.n_train, args.n_validation, args.n_test)
+    train_data, test_data = getdata(trajectories, params, args.n_train, args.n_validation, args.n_test, args)
 
     # Construct model
     m = build_model()
@@ -133,5 +133,7 @@ function train(trajectories, params, Args)
     # @show accuracy(train_data, m)
 
     # @show accuracy(test_data, m)
+
+    # return train_data, test_data
 
 end
