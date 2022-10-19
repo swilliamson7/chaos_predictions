@@ -107,6 +107,7 @@ function loss_all(data_loader, model, device)
     #acc = 0
     ls = 0.0f0
     num = 0
+    ŷ_vec = []
     for (x, y) in data_loader
         y = reshape(y, 1, length(y))
         x, y = device(x), device(y)
@@ -114,8 +115,16 @@ function loss_all(data_loader, model, device)
         ls += mse(ŷ, y, agg=sum)
         #acc += sum(onecold(ŷ) .== onecold(y)) ## Decode the output of the model
         num +=  size(x)[end]
+        push!(ŷ_vec, ŷ)
     end
-    return ls / num #acc / num
+    return ls / num, ŷ_vec #acc / num
+end
+
+function plot_parameters()
+    for (x, y) in data_loader
+        y = reshape(y, 1, length(y))
+        ŷ = model(x)
+    end
 end
 
 # function accuracy(data_loader, model)
@@ -128,7 +137,7 @@ end
 
 function train(trajectories, params, Args)
     # Initializing model parameters 
-    args = Args(4000, 5000, 4000, 3e-4, 200, 500, gpu)
+    args = Args(4000, 5000, 4000, 3e-4, 200, 10, gpu)
 
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
@@ -161,17 +170,20 @@ function train(trajectories, params, Args)
         end
         
         ## Report on train and test
-        train_loss = loss_all(train_data, model, device)
-        test_loss = loss_all(test_data, model, device)
+        train_loss, ŷ_vec_train = loss_all(train_data, model, device)
+        test_loss, ŷ_vec_test = loss_all(test_data, model, device)
         println("Epoch=$epoch")
         println("  train_loss = $train_loss")#, train_accuracy = $train_acc")
         println("  test_loss = $test_loss")#, test_accuracy = $test_acc")
     end
 
+
     # # @show accuracy(train_data, m)
 
     # # @show accuracy(test_data, m)
 
-    return train_data, test_data
+    return train_data, test_data, ŷ_vec_train, ŷ_vec_test
 
 end
+
+

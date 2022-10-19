@@ -6,7 +6,7 @@ using Parameters: @with_kw
 using CUDA
 using MLDatasets
 
-using JLD2, Random 
+using JLD2, Random, Plots
 
 include("pend_model.jl")
 include("netural_net_one.jl")
@@ -32,4 +32,7 @@ mutable struct Args
     device::Function   # set as gpu, if gpu available
 end
 
-train(trajectories, params, Args)
+train_data, test_data, ŷ_vec_train, ŷ_vec_test = train(trajectories, params, Args)
+
+#plot(ŷ_vec_train)
+
