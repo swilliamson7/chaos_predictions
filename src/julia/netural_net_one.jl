@@ -81,8 +81,8 @@ end
 
 function build_model(; trajectory_size=101, param_out=1)
     return Chain(
- 	    Dense(prod(trajectory_size), 32, relu),
-            Dense(32, param_out))
+ 	    Dense(prod(trajectory_size), 1000, relu),
+            Dense(1000, param_out))
 end
 
 # function loss_all(dataloader, model)
@@ -128,7 +128,7 @@ end
 
 function train(trajectories, params, Args)
     # Initializing model parameters 
-    args = Args(4000, 5000, 4000, 3e-4, 200, 10, gpu)
+    args = Args(4000, 5000, 4000, 3e-4, 200, 500, gpu)
 
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
