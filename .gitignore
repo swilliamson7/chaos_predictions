@@ -4,3 +4,4 @@ src/.DS_Store
 **/__pycache__
 src/python/neuralnets/lightning_logs
 src/python/neuralnets/checkpoints
+src/julia/experiment_trial_1/
