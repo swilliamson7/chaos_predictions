@@ -9,6 +9,7 @@ using MLDatasets
 using JLD2 
 using Debugger
 
+include("create_structs.jl")
 include("pend_model.jl")
 
 @load "q_values.jld2" q_values 
@@ -64,8 +65,6 @@ function split_dataset(trajectories, params, Args)
 end
 
 
-
-
 function getdata(trajectories, params, Args)
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
@@ -101,18 +100,15 @@ function loss_all(data_loader, model, device)
     #acc = 0
     ls = 0.0f0
     num = 0
-    ŷ_vec = []
+    ŷ_vec = Matrix{Float64}(undef, 1,0)
     for (x, y) in data_loader
         y = reshape(y, 1, length(y))
         x, y = device(x), device(y)
         ŷ = model(x)
         ls += mse(ŷ, y, agg=sum)
-        #acc += sum(onecold(ŷ) .== onecold(y)) ## Decode the output of the model
         num +=  size(x)[end]
-        push!(ŷ_vec, ŷ)
-        @bp
+        ŷ_vec=[ŷ_vec ŷ]
     end
-    @bp
     return ls / num, ŷ_vec #acc / num
 end
 
@@ -138,7 +134,7 @@ function train(trajectories, params, args)
 
     # Load Data
     train_data, test_data = getdata(trajectories, params, args)
-
+    @bp
     ## Construct model
     model = build_model() |> device
     ps = Flux.params(model) ## model's trainable parameters
