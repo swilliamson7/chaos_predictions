@@ -15,7 +15,7 @@ end
     n_train::Int         # number of training data
     n_test::Int          # number of test data
     n_validation::Int    # number of validation data
-    η::Float64           # learning rate
+    η::Float64           # step size 
     batchsize::Int       # batch size
     epochs::Int          # number of epochs
     device::Function     # set as gpu, if gpu available

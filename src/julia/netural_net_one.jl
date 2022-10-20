@@ -28,7 +28,7 @@ function generate_dataset(s::generate_dataset_Args)
 
     for k = 1:Ndata
 
-        trajectory = generate_trajectory(T, dt, k, b, g, state0, q[k], l)
+        trajectory = generate_trajectory(T, dt, b, g, state0, q[k], l)
         theta[k, :] = trajectory[2, :]
         
     end
@@ -42,7 +42,7 @@ function generate_dataset(N_data, T, dt, b, g, state0, q, l)
 
     for k = 1:N_data
 
-        trajectory = generate_trajectory(T, dt, k, b, g, state0, q[k], l)
+        trajectory = generate_trajectory(T, dt, b, g, state0, q[k], l)
         theta[k, :] = trajectory[2, :]
         
     end

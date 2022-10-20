@@ -1,10 +1,8 @@
-using JLD2, Random
+using Enzyme 
 
-q_values = 100 .+ 0.001 .* randn(1, 10000)
-l_values = 9.81 .+ 0.001 .* randn(1, 10000)
+include("pend_model.jl")
 
-@save "q_values.jld2" q_values 
+out = zeros(2)
 
-@save "l_values.jld2" l_values
+# forward_step(out, 0.1, 1, b, w_d, g, [0.0, 0.0], 100, g)
 
-@load 
