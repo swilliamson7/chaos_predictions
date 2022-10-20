@@ -10,7 +10,7 @@ const T = 50            # how long we'll run the forced pendulum for (seconds)
 const dt = .01          # distance between steps
 const nt = Int(T / dt)  # number of steps to take, given the above T and dt 
 
-data_steps = LinRange(100, 1000, 10)
+data_steps = [20 + 5*t for t = 1:5]
 data = generate_trajectory(T, dt, b, g, [0.0, 0.0], 101, g)
 
 states, adjoint_variables = adjoint(data_steps, data, dt, b, w_d, T, g, [0.0, 0.0], 101.01, g)

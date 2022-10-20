@@ -11,7 +11,7 @@ using Debugger
 include("create_structs.jl")
 include("dataset_utils.jl")
 include("pend_model.jl")
-include("netural_net_one.jl")
+include("neural_net_one.jl")
 
 @load "l_values.jld2" l_values
 @load "q_values.jld2" q_values 
@@ -42,5 +42,3 @@ y_vec_train = train_data.data[2]
 x=1:length(ŷ_vec_train)
 plot(x, ŷ_vec_train', seriestype = :scatter, label = "ŷ_vec_train") 
 plot!(x, y_vec_train, seriestype = :scatter, label = "y_vec_train") 
-
-
