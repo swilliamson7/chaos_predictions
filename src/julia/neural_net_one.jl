@@ -20,8 +20,6 @@ if has_cuda()		# Check if CUDA is available
     CUDA.allowscalar(false)
 end
 
-
-
 function generate_dataset(s::generate_dataset_Args)
     @unpack_generate_dataset_Args s
     theta = zeros(Ndata, T+1)
