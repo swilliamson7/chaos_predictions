@@ -7,6 +7,7 @@ using Parameters: @with_kw
 using CUDA
 using MLDatasets
 using JLD2 
+using Debugger
 
 include("pend_model.jl")
 
@@ -18,12 +19,21 @@ if has_cuda()		# Check if CUDA is available
     CUDA.allowscalar(false)
 end
 
-# @with_kw mutable struct Args
-#     η::Float64 = 3e-4       # learning rate
-#     batchsize::Int = 200    # batch size
-#     epochs::Int = 10        # number of epochs
-#     device::Function = gpu  # set as gpu, if gpu available
-# end
+
+
+function generate_dataset(s::generate_dataset_Args)
+    @unpack_generate_dataset_Args s
+    theta = zeros(Ndata, T+1)
+
+    for k = 1:Ndata
+
+        trajectory = generate_trajectory(T, dt, k, b, g, state0, q[k], l)
+        theta[k, :] = trajectory[2, :]
+        
+    end
+
+    return theta 
+end
 
 function generate_dataset(N_data, T, dt, b, g, state0, q, l)
 
@@ -37,7 +47,6 @@ function generate_dataset(N_data, T, dt, b, g, state0, q, l)
     end
 
     return theta 
-
 end
 
 function split_dataset(trajectories, params, Args)
@@ -53,6 +62,9 @@ function split_dataset(trajectories, params, Args)
     return x_train, y_train, x_test, y_test, x_validation, y_validation
 
 end
+
+
+
 
 function getdata(trajectories, params, Args)
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
@@ -85,24 +97,6 @@ function build_model(; trajectory_size=101, param_out=1)
             Dense(1000, param_out))
 end
 
-# function loss_all(dataloader, model)
-#     L = 0f0
-#     for (x,y) in dataloader
-#         L += logitcrossentropy(model(x), y)
-#     end
-#     L/length(dataloader)
-# end
-
-# function loss_all(dataloader, model)
-
-#     L = 0f0
-
-#     for (x,y) in dataloader
-#         L += mse(model(x), y)
-#     end
-
-# end
-
 function loss_all(data_loader, model, device)
     #acc = 0
     ls = 0.0f0
@@ -116,7 +110,9 @@ function loss_all(data_loader, model, device)
         #acc += sum(onecold(ŷ) .== onecold(y)) ## Decode the output of the model
         num +=  size(x)[end]
         push!(ŷ_vec, ŷ)
+        @bp
     end
+    @bp
     return ls / num, ŷ_vec #acc / num
 end
 
@@ -127,17 +123,9 @@ function plot_parameters()
     end
 end
 
-# function accuracy(data_loader, model)
-#     acc = 0
-#     for (x,y) in data_loader
-#         acc += sum(onecold(cpu(model(x))) .== onecold(cpu(y)))*1 / size(x,2)
-#     end
-#     acc/length(data_loader)
-# end
-
-function train(trajectories, params, Args)
+function train(trajectories, params, args)
     # Initializing model parameters 
-    args = Args(4000, 5000, 4000, 3e-4, 200, 10, gpu)
+    
 
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
@@ -161,6 +149,8 @@ function train(trajectories, params, Args)
     evalcb = () -> @show(loss_all(train_data, m, device))
     opt = ADAM(args.η)
 		
+    ŷ_vec_train=[]
+    ŷ_vec_test=[]
     for epoch in 1:args.epochs
         for (x, y) in train_data
             y = reshape(y, 1, length(y))
