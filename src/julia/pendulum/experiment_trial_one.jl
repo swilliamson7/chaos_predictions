@@ -18,9 +18,9 @@ include("neural_net_one.jl")
 
 Random.seed!(420)
 
-Ndata = 10000
-params = 100 .+ 0.01 .* randn(1, Ndata)
-out_dir = "./experiment_trial_1/"
+N_data = 10000
+params = 100 .+ 20.0 .* randn(1, N_data)
+out_dir = "./experiment_trial_variance_50/"
 dataset_filename = "dataset.jdl2"
 
 if !isdir(out_dir)
@@ -28,19 +28,24 @@ if !isdir(out_dir)
 end
 
 # struct generate_dataset_Args loaded from create_structs.jl
-generate_dataset_args = generate_dataset_Args(Ndata, 100, 0.1, b, g, [0.0;0.0], params, 9.81)
+generate_dataset_args = generate_dataset_Args(N_data, 500, 0.1, b, g, [0.0;0.0], params, 9.81)
 
 # if dataset_filename exists in out_dir, load it. Else, create and save it.
 trajectories = load_dataset(out_dir * dataset_filename, generate_dataset_args)
 
 # set train args
-args = train_Args(4000, 5000, 4000, 3e-4, 200, 50, gpu)
+args = train_Args(4000, 5000, 4000, 3e-4, 200, 10, gpu)
 train_data, test_data, ŷ_vec_train, ŷ_vec_test = train(trajectories, params, args)
 
 # plot
+ŷ_vec_train = ŷ_vec_train'
+ŷ_vec_test = ŷ_vec_test'
+
 y_vec_train = train_data.data[2]
 x=1:length(ŷ_vec_train)
-# plot(x, ŷ_vec_train', seriestype = :scatter, label = "ŷ_vec_train") 
-# plot!(x, y_vec_train, seriestype = :scatter, label = "y_vec_train") 
 
 plot(x, abs.(ŷ_vec_train' - y_vec_train), seriestype = :scatter, label = "Diff")
+
+every_nth = 100
+plot(x[1:every_nth:end], ŷ_vec_train[1:every_nth:end], seriestype = :scatter, label = "ŷ_vec_train") 
+plot!(x[1:every_nth:end], y_vec_train[1:every_nth:end], seriestype = :scatter, label = "y_vec_train") 

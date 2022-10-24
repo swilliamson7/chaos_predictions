@@ -8,6 +8,7 @@ using CUDA
 using MLDatasets
 using JLD2 
 using Debugger
+using LinearAlgebra
 
 include("create_structs.jl")
 include("pend_model.jl")
@@ -22,9 +23,9 @@ end
 
 function generate_dataset(s::generate_dataset_Args)
     @unpack_generate_dataset_Args s
-    theta = zeros(Ndata, T+1)
+    theta = zeros(N_data, T+1)
 
-    for k = 1:Ndata
+    for k = 1:N_data
 
         trajectory = generate_trajectory(T, dt, b, g, state0, q[k], l)
         theta[k, :] = trajectory[2, :]
@@ -41,6 +42,20 @@ function generate_dataset(N_data, T, dt, b, g, state0, q, l)
     for k = 1:N_data
 
         trajectory = generate_trajectory(T, dt, b, g, state0, q[k], l)
+        theta[k, :] = trajectory[2, :]
+        
+    end
+
+    return theta 
+end
+
+function generate_dataset_perturb_b(s::generate_dataset_Args)
+    @unpack_generate_dataset_Args s
+    theta = zeros(N_data, T+1)
+
+    for k = 1:N_data
+
+        trajectory = generate_trajectory(T, dt, b[k], g, state0, q[1], l[1])
         theta[k, :] = trajectory[2, :]
         
     end
@@ -88,14 +103,22 @@ function getdata(trajectories, params, Args)
     return train_data, test_data #, validation_data
 end
 
-function build_model(; trajectory_size=101, param_out=1)
+function build_model(; trajectory_size=501, param_out=1)
     return Chain(
  	    Dense(prod(trajectory_size), 1000, relu),
-            Dense(1000, param_out))
+ 	    Dense(1000, 500, relu),
+        Dense(500, param_out))
 end
 
-function loss_all(data_loader, model, device)
-    #acc = 0
+#function build_model(; trajectory_size=501, param_out=1)
+#    return Chain(
+# 	    Dense(prod(trajectory_size), 1000, relu),
+#        Dense(1000, param_out))
+#end
+
+
+function loss_and_accuracy(data_loader, model, device)
+    acc = 0
     ls = 0.0f0
     num = 0
     ŷ_vec = Matrix{Float64}(undef, 1,0)
@@ -105,16 +128,10 @@ function loss_all(data_loader, model, device)
         ŷ = model(x)
         ls += mse(ŷ, y, agg=sum)
         num +=  size(x)[end]
+        acc += norm(ŷ-y)/norm(y)
         ŷ_vec=[ŷ_vec ŷ]
     end
-    return ls / num, ŷ_vec #acc / num
-end
-
-function plot_parameters()
-    for (x, y) in data_loader
-        y = reshape(y, 1, length(y))
-        ŷ = model(x)
-    end
+    return ls / num, ŷ_vec, acc / num
 end
 
 function train(trajectories, params, args)
@@ -132,19 +149,19 @@ function train(trajectories, params, args)
 
     # Load Data
     train_data, test_data = getdata(trajectories, params, args)
-    @bp
+
     ## Construct model
     model = build_model() |> device
     ps = Flux.params(model) ## model's trainable parameters
 
-    loss(x,y) = mse(m(x), y)
-
-    ## Training
-    evalcb = () -> @show(loss_all(train_data, m, device))
+    ## Optimizer
     opt = ADAM(args.η)
 		
+    ## Training
     ŷ_vec_train=[]
     ŷ_vec_test=[]
+    train_acc_vec=[]
+    test_acc_vec=[]
     for epoch in 1:args.epochs
         for (x, y) in train_data
             y = reshape(y, 1, length(y))
@@ -154,19 +171,16 @@ function train(trajectories, params, args)
         end
         
         ## Report on train and test
-        train_loss, ŷ_vec_train = loss_all(train_data, model, device)
-        test_loss, ŷ_vec_test = loss_all(test_data, model, device)
+        train_loss, ŷ_vec_train, train_acc = loss_and_accuracy(train_data, model, device)
+        test_loss, ŷ_vec_test, test_acc = loss_and_accuracy(test_data, model, device)
         println("Epoch=$epoch")
-        println("  train_loss = $train_loss")#, train_accuracy = $train_acc")
-        println("  test_loss = $test_loss")#, test_accuracy = $test_acc")
+        println("  train_loss = $train_loss, train_accuracy = $train_acc")
+        println("  test_loss = $test_loss test_accuracy = $test_acc")
+        train_acc_vec=append!(train_acc_vec, train_acc)
+        test_acc_vec=append!(test_acc_vec, test_acc)
     end
 
-
-    # # @show accuracy(train_data, m)
-
-    # # @show accuracy(test_data, m)
-
-    return train_data, test_data, ŷ_vec_train, ŷ_vec_test
+    return train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec
 
 end
 
