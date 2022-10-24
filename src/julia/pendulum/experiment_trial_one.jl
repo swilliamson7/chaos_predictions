@@ -34,11 +34,13 @@ generate_dataset_args = generate_dataset_Args(Ndata, 100, 0.1, b, g, [0.0;0.0], 
 trajectories = load_dataset(out_dir * dataset_filename, generate_dataset_args)
 
 # set train args
-args = train_Args(4000, 5000, 4000, 3e-4, 200, 2, gpu)
+args = train_Args(4000, 5000, 4000, 3e-4, 200, 50, gpu)
 train_data, test_data, ŷ_vec_train, ŷ_vec_test = train(trajectories, params, args)
 
 # plot
 y_vec_train = train_data.data[2]
 x=1:length(ŷ_vec_train)
-plot(x, ŷ_vec_train', seriestype = :scatter, label = "ŷ_vec_train") 
-plot!(x, y_vec_train, seriestype = :scatter, label = "y_vec_train") 
+# plot(x, ŷ_vec_train', seriestype = :scatter, label = "ŷ_vec_train") 
+# plot!(x, y_vec_train, seriestype = :scatter, label = "y_vec_train") 
+
+plot(x, abs.(ŷ_vec_train' - y_vec_train), seriestype = :scatter, label = "Diff")
