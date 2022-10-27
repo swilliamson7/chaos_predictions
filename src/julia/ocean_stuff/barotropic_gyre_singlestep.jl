@@ -10,12 +10,12 @@ grid = LatitudeLongitudeGrid(size = (60, 60, 1),
                              latitude = (15, 75),
                              z = (-4000, 0))
 
-@inline wind_stress(λ, φ, t, p) = p.τ₀ * cos(2π * (φ - p.φ₀) / p.Lφ) 
+@inline wind_stress_x(λ, φ, t, p) = p.τ₀ * cos(2π * (φ - p.φ₀) / p.Lφ) 
 
-# @inline wind_stress(λ, φ, t, p) = p.τ₀ * cos(2π * (λ - p.φ₀) / p.Lλ)
+@inline wind_stress_y(λ, φ, t, p) = p.τ₀ * cos(2π * (λ - p.λ₀) / p.Lλ)
 
-wind_stress_bc = FluxBoundaryCondition(wind_stress, parameters = (τ₀=1e-4, Lφ=grid.Ly, φ₀=15))
-
+wind_stress_bc_x = FluxBoundaryCondition(wind_stress_x, parameters = (τ₀=1e-4, Lφ=grid.Ly, φ₀=15))
+wind_stress_bc_y = FluxBoundaryCondition(wind_stress_y, parameters = (τ₀=1e-4, Lλ=grid.Lx, λ₀=-30))
 
 @inline u_bottom_drag(i, j, grid, clock, fields, μ) = @inbounds - μ * fields.u[i, j, 1]
 @inline v_bottom_drag(i, j, grid, clock, fields, μ) = @inbounds - μ * fields.v[i, j, 1]
@@ -24,8 +24,8 @@ wind_stress_bc = FluxBoundaryCondition(wind_stress, parameters = (τ₀=1e-4, L�
 u_bottom_drag_bc = FluxBoundaryCondition(u_bottom_drag, discrete_form=true, parameters=μ)
 v_bottom_drag_bc = FluxBoundaryCondition(v_bottom_drag, discrete_form=true, parameters=μ)
 
-u_bcs = FieldBoundaryConditions(top=wind_stress_bc, bottom=u_bottom_drag_bc)
-v_bcs = FieldBoundaryConditions(bottom=v_bottom_drag_bc)
+u_bcs = FieldBoundaryConditions(top=wind_stress_bc_y, bottom=u_bottom_drag_bc)
+v_bcs = FieldBoundaryConditions(top=wind_stress_bc_x, bottom=v_bottom_drag_bc)
 
 νh₀ = 5e3 * (60 / grid.Nx)^2
 closure = HorizontalScalarDiffusivity(ν = νh₀)
