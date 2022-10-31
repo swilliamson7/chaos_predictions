@@ -17,37 +17,70 @@ if has_cuda()		# Check if CUDA is available
     CUDA.allowscalar(false)
 end
 
+# generates N_data different trajectories to use as our data points 
 function generate_dataset(s::generate_dataset_Args)
     @unpack_generate_dataset_Args s
+    theta = zeros(N_data, 3, T+1)
 
-    lorenz_data = zeros(Ndata, T+1)
-
-    params = lorenz_params(rho, sigma, beta)
-
-    for k = 1:Ndata
-
-        trajectory = generate_trajectory(T, dt, state0, params)
-        lorenz_data[k, :] = trajectory[2, :]
-        
+    if length(rho) > 1
+        for k = 1:N_data
+            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma, beta)
+            all_trajectories[k, :, :] = trajectory
+        end
+    end
+    if length(sigma) > 1 
+        for k = 1:N_data
+            trajectory = generate_trajectory(T, dt, state0, rho, sigma[k], beta)
+            theta[k, :, :] = trajectory
+        end
+    end
+    if length(l) > 1 
+        for k = 1:N_data
+            trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta[k])
+            theta[k, :, :] = trajectory
+        end
     end
 
     return theta 
+
 end
 
-function generate_dataset(Ndata, T, dt, state0, rho, beta, sigma)
+function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
 
-    theta = zeros(Ndata, T+1)
+    all_trajectories = zeros(N_data, 3, T)
 
-    for k = 1:Ndata
-
-        trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta)
-        theta[k, :] = trajectory[2, :]
-        
+    if length(rho) > 1
+        for k = 1:N_data
+            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma, beta)
+            all_trajectories[k, :, :] = trajectory[:, :]
+        end
+    elseif length(sigma) > 1 
+        for k = 1:N_data
+            trajectory = generate_trajectory(T, dt, state0, rho, sigma[k], beta)
+            all_trajectories[k, :, :] = trajectory[:, :]
+        end
+    elseif length(beta) > 1 
+        for k = 1:N_data
+            trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta[k])
+            all_trajectories[k, :, :] = trajectory[:, :]
+        end
     end
 
-    return theta 
+    return all_trajectories 
+
 end
 
+function flatten_trajectories(trajectories, Args::train_Args)
+
+    train_trajectories = Flux.flatten(trajectories[1:Args.n_train, :, :])
+
+    validation_trajectories = Flux.flatten(trajectories[Args.n_train + 1:Args.n_validation + Args.n_train, :, :])
+
+    test_trajectories = Flux.flatten(trajectories[Args.n_validation + Args.n_train + 1:end, :, :])
+
+    return train_trajectories, validation_trajectories, test_trajectories
+    
+end
 # After generating a bunch of different trajectories we split them into the 
 # canonical train, validate, test groups.
 
@@ -151,7 +184,10 @@ function plot_parameters()
 end
 
 function train(trajectories, params, args)
-    # Initializing model parameters 
+
+    # Load Data
+    train_data, test_data = getdata(trajectories, params, args)
+
     
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
@@ -189,8 +225,8 @@ function train(trajectories, params, args)
         train_loss, ŷ_vec_train = loss_all(train_data, model, device)
         test_loss, ŷ_vec_test = loss_all(test_data, model, device)
         println("Epoch=$epoch")
-        println("  train_loss = $train_loss")#, train_accuracy = $train_acc")
-        println("  test_loss = $test_loss")#, test_accuracy = $test_acc")
+        println("train_loss = $train_loss")#, train_accuracy = $train_acc")
+        println("test_loss = $test_loss")#, test_accuracy = $test_acc")
     end
 
 
