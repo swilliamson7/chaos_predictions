@@ -51,26 +51,20 @@ function generate_trajectory(T, dt, state0, params)
 
 end
 
-# # Function for Enzyme (needs to return nothing)
-# # just runs the above forward step function, but doesn't
-# # return the output, will be what we apply Enzyme to. 
-# # Inputs: 
-# #       dt - timestep
-# #       f - forcing *value* at the current iteration 
-# #       g - gravitational acceleration  
-# #       q - damping coefficient 
-# #       l - pendulum length 
-# #       state_now - state at the current iteration 
-# #       state_new - output of the forward function, given the above
-# #                   inputs 
-# # Outputs: nothing 
-# function ad_forward(dt, k, b, w_d, g, state_now, q, l, state_new) 
+function generate_trajectory(T, dt, state0, rho, sigma, beta)
 
-#     state_new = forward_step(dt, k, b, w_d, g, state_now, q, l)
+    all_states = zeros(3, T)
+    all_states[:, 1] = state0
+    
+    for j = 2:T
+        out = zeros(3)
+        forward_step(out, dt, all_states[:, j-1], rho, sigma, beta) 
+        all_states[:, j] = out
+    end
 
-#     return nothing
+    return all_states
 
-# end 
+end
 
 
 # Function mainly for convenience, this will run one single adjoint 
@@ -114,16 +108,9 @@ end
 #                inputted parameters
 #       adjoint_variables - the adjoint variables (Lagrange multipliers)
 #                that were computed 
-function adjoint(data_steps, data, dt, b, w_d, T, g, state0, q0, l0)
+function adjoint(data_steps, data, dt, T, state0, params)
 
-# first run the entire forward problem 
-states = zeros(2, Int(T/dt))
-states[:, 1] = state0
-
-for j = 2:Int(T/dt)
-    state_new = forward_step(dt, j, b, w_d, g, states[:, j-1], q0, l0)
-    states[:, j] = state_new 
-end
+states = generate_trajectory(T, dt, state0, params)
 
 # next we want to run the adjoint problem backward and compute 
 # the adjoint variables 
@@ -132,11 +119,13 @@ adjoint_variables = zeros(2, Int(T/dt))
 for j = Int(T/dt)-1:-1:1
 
     adjoint_old = adjoint_variables[:, j+1]
-    d_state_now = ad_step(dt, j, b, w_d, g, states[:,j], q0, l0, adjoint_old)
+    d_state_now = ad_step(dt, states[:,j], adjoint_old, params)
     adjoint_variables[:,j] .= d_state_now[:]
 
     # this statement checks if we have a data point at the current iteration, and if so adjusts
     # the adjoint value 
+
+    ## This needs to be fixed to work with the Lorenz model, currently still set up for the pendulum ##################
     if j in data_steps
 
         adjoint_variables[2,j] = adjoint_variables[2,j] + 1/(length(data_steps)) * (states[2,j] - data[2,j])^2 

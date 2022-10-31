@@ -44,4 +44,3 @@ model = regression_model()
 ŷ_vec_validation, validation_losses, stuff = hyperparameter_training(trajectories, b_perturb_vec, args, lambdas)
 
 plot(lambdas, stuff, xaxis=:log)
-ylim([0,1])

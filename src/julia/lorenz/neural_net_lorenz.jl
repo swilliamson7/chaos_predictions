@@ -34,13 +34,13 @@ function generate_dataset(s::generate_dataset_Args)
     return theta 
 end
 
-function generate_dataset(N_data, T, dt, b, g, state0, q, l)
+function generate_dataset(Ndata, T, dt, state0, rho, beta, sigma)
 
-    theta = zeros(N_data, T+1)
+    theta = zeros(Ndata, T+1)
 
-    for k = 1:N_data
+    for k = 1:Ndata
 
-        trajectory = generate_trajectory(T, dt, b, g, state0, q[k], l)
+        trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta)
         theta[k, :] = trajectory[2, :]
         
     end
@@ -48,7 +48,10 @@ function generate_dataset(N_data, T, dt, b, g, state0, q, l)
     return theta 
 end
 
-function split_dataset(trajectories, params, Args)
+# After generating a bunch of different trajectories we split them into the 
+# canonical train, validate, test groups.
+
+function split_dataset(trajectories, params, Args::train_Args)
 
     x_train = trajectories[1:Args.n_train, 1:end]
     x_test = trajectories[Args.n_train+1:Args.n_test+Args.n_train, 1:end]
@@ -110,6 +113,36 @@ function loss_all(data_loader, model, device)
     return ls / num, ŷ_vec #acc / num
 end
 
+# same as above except now computing the ridged regression loss via penalizing the 
+# weight operator via a parameter lambda 
+function ridge_regression_loss(data_loader, model, device, lambda)
+    acc = 0
+    average = 0
+    loss = 0.0f0
+    num = 0
+    squared_error = 0.0
+    ŷ_vec = Matrix{Float64}(undef, 1,0)
+    for (x, y) in data_loader
+
+        y = reshape(y, 1, length(y))
+        x, y = device(x), device(y)
+        ŷ = model(x)
+
+        squared_error = mse(ŷ, y, agg=sum)
+        average = average + sum(y) 
+
+        loss += squared_error + lambda * sum(model.weight.^2)
+        num +=  size(x)[end]
+        acc += norm(ŷ-y)/norm(y)
+        
+        ŷ_vec=[ŷ_vec ŷ]
+
+    end
+
+    return loss / num, ŷ_vec, acc / num, squared_error, average / num 
+
+end
+
 function plot_parameters()
     for (x, y) in data_loader
         y = reshape(y, 1, length(y))
@@ -120,7 +153,6 @@ end
 function train(trajectories, params, args)
     # Initializing model parameters 
     
-
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
         CUDA.allowscalar(false)

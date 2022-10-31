@@ -48,7 +48,9 @@ c = sqrt(g * H) # gravity wave speed
 @info "Before taking a time step"
 @show maximum(model.velocities.u)
 
-time_step!(model, Δt)
+for j = 1:1000
+    time_step!(model, Δt)
+end
 
 @info "After taking a time step"
 @show maximum(model.velocities.u)

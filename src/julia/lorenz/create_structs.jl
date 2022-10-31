@@ -5,6 +5,11 @@ using Parameters
     T::Int64
     dt::Float64
     state0::Vector{Float64}
+
+    rho::Float64
+    sigma::Float64 
+    beta::Float64
+
 end
 
 @with_kw mutable struct train_Args
