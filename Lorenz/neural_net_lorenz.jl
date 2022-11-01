@@ -20,49 +20,49 @@ end
 # generates N_data different trajectories to use as our data points 
 function generate_dataset(s::generate_dataset_Args)
     @unpack_generate_dataset_Args s
-    theta = zeros(N_data, 3, T+1)
+    all_trajectories = zeros(3, T+1, N_data)
 
     if length(rho) > 1
         for k = 1:N_data
             trajectory = generate_trajectory(T, dt, state0, rho[k], sigma, beta)
-            all_trajectories[k, :, :] = trajectory
+            all_trajectories[:, :, k] = trajectory
         end
     end
     if length(sigma) > 1 
         for k = 1:N_data
             trajectory = generate_trajectory(T, dt, state0, rho, sigma[k], beta)
-            theta[k, :, :] = trajectory
+            all_trajectories[:, :, k] = trajectory
         end
     end
     if length(l) > 1 
         for k = 1:N_data
             trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta[k])
-            theta[k, :, :] = trajectory
+            all_trajectories[:, :, k] = trajectory
         end
     end
 
-    return theta 
+    return all_trajectories 
 
 end
 
 function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
 
-    all_trajectories = zeros(N_data, 3, T)
+    all_trajectories = zeros(3, T, N_data)
 
     if length(rho) > 1
         for k = 1:N_data
             trajectory = generate_trajectory(T, dt, state0, rho[k], sigma, beta)
-            all_trajectories[k, :, :] = trajectory[:, :]
+            all_trajectories[:, :, k] = trajectory[:, :]
         end
     elseif length(sigma) > 1 
         for k = 1:N_data
             trajectory = generate_trajectory(T, dt, state0, rho, sigma[k], beta)
-            all_trajectories[k, :, :] = trajectory[:, :]
+            all_trajectories[:, :, k] = trajectory[:, :]
         end
     elseif length(beta) > 1 
         for k = 1:N_data
             trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta[k])
-            all_trajectories[k, :, :] = trajectory[:, :]
+            all_trajectories[:, :, k] = trajectory[:, :]
         end
     end
 
@@ -72,11 +72,11 @@ end
 
 function flatten_trajectories(trajectories, Args::train_Args)
 
-    train_trajectories = Flux.flatten(trajectories[1:Args.n_train, :, :])
+    train_trajectories = Flux.flatten(trajectories[:, :, 1:Args.n_train])
 
-    validation_trajectories = Flux.flatten(trajectories[Args.n_train + 1:Args.n_validation + Args.n_train, :, :])
+    validation_trajectories = Flux.flatten(trajectories[:, :, Args.n_train + 1:Args.n_validation + Args.n_train])
 
-    test_trajectories = Flux.flatten(trajectories[Args.n_validation + Args.n_train + 1:end, :, :])
+    test_trajectories = Flux.flatten(trajectories[:, :, Args.n_validation + Args.n_train + 1:end])
 
     return train_trajectories, validation_trajectories, test_trajectories
     
