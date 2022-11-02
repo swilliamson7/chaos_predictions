@@ -2,7 +2,7 @@ using Plots
 
 include("lorenz_model.jl")
 
-params = lorenz_params(28, 10, 8/3)
+params = lorenz_params(28, 15, 8/3)
 T = 1000
 
 all_states = zeros(3, T)

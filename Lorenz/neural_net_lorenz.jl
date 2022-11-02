@@ -8,6 +8,7 @@ using CUDA
 using MLDatasets
 using JLD2 
 using Debugger
+using LinearAlgebra
 
 include("create_structs.jl")
 include("lorenz_model.jl")
@@ -18,25 +19,25 @@ if has_cuda()		# Check if CUDA is available
 end
 
 # generates N_data different trajectories to use as our data points 
-function generate_dataset(s::generate_dataset_Args)
-    @unpack_generate_dataset_Args s
-    all_trajectories = zeros(3, T+1, N_data)
+function generate_dataset(😄::generate_dataset_Args)
+    @unpack_generate_dataset_Args 😄
+    all_trajectories = zeros(3, T, N_data)
 
     if length(rho) > 1
         for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma, beta)
+            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma[1], beta[1])
             all_trajectories[:, :, k] = trajectory
         end
     end
     if length(sigma) > 1 
         for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho, sigma[k], beta)
+            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[k], beta[1])
             all_trajectories[:, :, k] = trajectory
         end
     end
-    if length(l) > 1 
+    if length(beta) > 1 
         for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta[k])
+            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[1], beta[k])
             all_trajectories[:, :, k] = trajectory
         end
     end
@@ -51,17 +52,17 @@ function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
 
     if length(rho) > 1
         for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma, beta)
+            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma[1], beta[1])
             all_trajectories[:, :, k] = trajectory[:, :]
         end
     elseif length(sigma) > 1 
         for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho, sigma[k], beta)
+            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[k], beta[1])
             all_trajectories[:, :, k] = trajectory[:, :]
         end
     elseif length(beta) > 1 
         for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho, sigma, beta[k])
+            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[1], beta[k])
             all_trajectories[:, :, k] = trajectory[:, :]
         end
     end
@@ -70,25 +71,28 @@ function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
 
 end
 
-function flatten_trajectories(trajectories, Args::train_Args)
+# # Takes all of the trajectories and transforms into a matrix, batched as 
+# # train, validation, and test. Specifically, the output of Flux.flatten(data)
+# # is a matrix where each column is one data point (i.e. three-dimensional trajectory) 
+# function flatten_trajectories(trajectories, Args::train_Args)
 
-    train_trajectories = Flux.flatten(trajectories[:, :, 1:Args.n_train])
+#     train_trajectories = Flux.flatten(trajectories[:, :, 1:Args.n_train])
 
-    validation_trajectories = Flux.flatten(trajectories[:, :, Args.n_train + 1:Args.n_validation + Args.n_train])
+#     validation_trajectories = Flux.flatten(trajectories[:, :, Args.n_train + 1:Args.n_validation + Args.n_train])
 
-    test_trajectories = Flux.flatten(trajectories[:, :, Args.n_validation + Args.n_train + 1:end])
+#     test_trajectories = Flux.flatten(trajectories[:, :, Args.n_validation + Args.n_train + 1:end])
 
-    return train_trajectories, validation_trajectories, test_trajectories
+#     return train_trajectories, validation_trajectories, test_trajectories
     
-end
+# end
+
 # After generating a bunch of different trajectories we split them into the 
 # canonical train, validate, test groups.
-
 function split_dataset(trajectories, params, Args::train_Args)
 
-    x_train = trajectories[1:Args.n_train, 1:end]
-    x_test = trajectories[Args.n_train+1:Args.n_test+Args.n_train, 1:end]
-    x_validation = trajectories[Args.n_train+Args.n_test+1:end, 1:end]
+    x_train = trajectories[1:Args.n_train, :]
+    x_test = trajectories[Args.n_train+1:Args.n_test+Args.n_train, :]
+    x_validation = trajectories[Args.n_train+Args.n_test+1:end, :]
 
     y_train = params[1:Args.n_train]
     y_test = params[Args.n_train+1:Args.n_test+Args.n_train]
@@ -98,52 +102,57 @@ function split_dataset(trajectories, params, Args::train_Args)
 
 end
 
-
-function getdata(trajectories, params, Args)
+# Separates the given data points into batches corresponding to train, 
+# validation, and test
+function batch_data(trajectories, params, Args)
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
-    # Loading Dataset	
+    # flattening into a matrix whose columns are entire trajectories 
+    flattened_trajectories = Flux.flatten(trajectories[:, :, :])
 
-    x_train, y_train, x_test, y_test, x_validation, y_validation = split_dataset(trajectories, params, Args)
-
-    # xtrain, ytrain = # MLDatasets.MNIST.traindata(Float32)
-    # xtest, ytest =  # MLDatasets.MNIST.testdata(Float32)
+    # parsing data into train, test, and validation	
+    x_train, y_train, x_test, y_test, x_validation, y_validation = split_dataset(flattened_trajectories', params, Args)
 	
     # Reshape Data in order to flatten each image into a linear array
     x_train = x_train'
     x_test = x_test'
 
-    # # One-hot-encode the labels
-    # ytrain, ytest = onehotbatch(ytrain, 0:9), onehotbatch(ytest, 0:9)
-
     # Batching
     train_data = DataLoader((x_train, y_train), batchsize=Args.batchsize, shuffle=true)
     test_data = DataLoader((x_test, y_test), batchsize=Args.batchsize)
-    #validation_data = DataLoader((x_validation, y_validation), batchsize=Args.batchsize)
+    validation_data = DataLoader((x_validation, y_validation), batchsize=Args.batchsize)
 
-    return train_data, test_data #, validation_data
+    return train_data, test_data , validation_data
 end
 
-function build_model(; trajectory_size=101, param_out=1)
+function build_model(trajectory_size; param_out=1)
     return Chain(
  	    Dense(prod(trajectory_size), 1000, relu),
             Dense(1000, param_out))
 end
 
-function loss_all(data_loader, model, device)
-    #acc = 0
-    ls = 0.0f0
+# same as above except now we're using a single input layer and output layer model. 
+# this is just linear regression as we're using the identity operator to take us from 
+# input to output 
+function regression_model(trajectory_size; param_out=1)
+    return Dense(prod(trajectory_size), param_out, identity)
+end
+
+function loss_and_accuracy(data_loader, model, device)
+    acc = 0
+    loss = 0.0f0
     num = 0
     ŷ_vec = Matrix{Float64}(undef, 1,0)
     for (x, y) in data_loader
         y = reshape(y, 1, length(y))
         x, y = device(x), device(y)
         ŷ = model(x)
-        ls += mse(ŷ, y, agg=sum)
+        loss += mse(ŷ, y, agg=sum)
         num +=  size(x)[end]
+        acc += norm(ŷ - y)/norm(y)
         ŷ_vec=[ŷ_vec ŷ]
     end
-    return ls / num, ŷ_vec #acc / num
+    return loss / num, ŷ_vec, acc / num
 end
 
 # same as above except now computing the ridged regression loss via penalizing the 
@@ -176,17 +185,31 @@ function ridge_regression_loss(data_loader, model, device, lambda)
 
 end
 
-function plot_parameters()
-    for (x, y) in data_loader
+function test_model(data, model, device)
+
+    ŷ_test_vec = []
+    squared_error = 0.0
+    num = 0.0 
+    for (x,y) in data
+
         y = reshape(y, 1, length(y))
+        x, y = device(x), device(y)
         ŷ = model(x)
+        num +=  size(x)[end]
+        ŷ_test_vec = [ŷ_test_vec ŷ]
+        squared_error += mse(ŷ, y, agg=sum)
+
     end
+
+    return ŷ_test_vec, squared_error / num
+
 end
+
 
 function train(trajectories, params, args)
 
     # Load Data
-    train_data, test_data = getdata(trajectories, params, args)
+    train_data, test_data, = batch_data(trajectories, params, args)
 
     
     if CUDA.functional() && args.use_cuda
@@ -199,10 +222,10 @@ function train(trajectories, params, args)
     end
 
     # Load Data
-    train_data, test_data = getdata(trajectories, params, args)
-    @bp
+    train_data, test_data, _ = batch_data(trajectories, params, args)
+
     ## Construct model
-    model = build_model() |> device
+    model = regression_model(length(train_data.data[1][:,1])) |> device
     ps = Flux.params(model) ## model's trainable parameters
 
     loss(x,y) = mse(m(x), y)
@@ -212,7 +235,11 @@ function train(trajectories, params, args)
     opt = ADAM(args.η)
 		
     ŷ_vec_train=[]
-    ŷ_vec_test=[]
+    ŷ_vec_test = []
+
+    train_acc_vec = []
+    test_acc_vec = []
+
     for epoch in 1:args.epochs
         for (x, y) in train_data
             y = reshape(y, 1, length(y))
@@ -222,19 +249,23 @@ function train(trajectories, params, args)
         end
         
         ## Report on train and test
-        train_loss, ŷ_vec_train = loss_all(train_data, model, device)
-        test_loss, ŷ_vec_test = loss_all(test_data, model, device)
+        # train_loss, ŷ_vec_train, train_acc = loss_and_accuracy(train_data, model, device)
+        # test_loss, ŷ_vec_test, test_acc = loss_and_accuracy(test_data, model, device)
+
+        train_loss, ŷ_vec_train, train_acc = ridge_regression_loss(train_data, model, device, 0.1)
+        test_loss, ŷ_vec_test, test_acc = ridge_regression_loss(test_data, model, device, 0.1)
         println("Epoch=$epoch")
-        println("train_loss = $train_loss")#, train_accuracy = $train_acc")
-        println("test_loss = $test_loss")#, test_accuracy = $test_acc")
+        println("train_loss = $train_loss, train_accuracy = $train_acc")
+        println("test_loss = $test_loss, test_accuracy = $test_acc")
     end
 
+    #ŷ_vec_test, test_squared_error = test_model(test_data, model, device)
 
     # # @show accuracy(train_data, m)
 
     # # @show accuracy(test_data, m)
 
-    return train_data, test_data, ŷ_vec_train, ŷ_vec_test
+    return train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec #, test_squared_error
 
 end
 

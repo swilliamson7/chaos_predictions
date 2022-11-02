@@ -1,15 +1,13 @@
 using Parameters
 
 @with_kw mutable struct generate_dataset_Args
-    Ndata::Int64
+    N_data::Int64
     T::Int64
     dt::Float64
     state0::Vector{Float64}
-
-    rho::Float64
-    sigma::Float64 
-    beta::Float64
-
+    rho::Matrix{Float64}
+    sigma::Matrix{Float64}
+    beta::Matrix{Float64}
 end
 
 @with_kw mutable struct train_Args
