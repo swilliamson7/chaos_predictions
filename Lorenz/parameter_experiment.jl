@@ -22,6 +22,8 @@ Random.seed!(420)
 N_data=10000
 lambda = 0.01
 sigma = 10 .+ 10 .* randn(1, N_data)
+rho = hcat(28.0)
+beta = hcat(8/3)
 
 # struct generate_dataset_Args loaded from create_structs.jl
 
@@ -29,9 +31,10 @@ generate_dataset_args = generate_dataset_Args(N_data=N_data,
                                               T=100, 
                                               dt=0.001, 
                                               state0=[1.0;0.0;0.0], 
-                                              rho=hcat(28.0), 
+                                              rho=rho, 
                                               sigma=sigma, 
-                                              beta=hcat(10/3) )
+                                              beta=beta
+                                            )
 
 # if dataset_filename exists in out_dir, load it. Else, create and save it.
 trajectories = generate_dataset(generate_dataset_args)

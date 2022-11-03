@@ -106,30 +106,31 @@ end
 #                that were computed 
 function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
 
-states = generate_trajectory(T, dt, state0, rho, sigma, beta)
+    states = generate_trajectory(T, dt, state0, rho, sigma, beta)
 
-# next we want to run the adjoint problem backward and compute 
-# the adjoint variables 
-adjoint_variables = zeros(3, T)
+    # next we want to run the adjoint problem backward and compute 
+    # the adjoint variables 
+    adjoint_variables = zeros(3, T)
+    adjoint_variables[:, end] = ones(3)
 
-for j = T-1:-1:1
+    for j = T-1:-1:1
 
-    adjoint_old = adjoint_variables[:, j+1]
-    d_state_now = ad_step(dt, states[:,j], adjoint_old, rho, sigma, beta)
-    adjoint_variables[:,j] .= d_state_now[:]
+        adjoint_old = adjoint_variables[:, j+1]
+        d_state_now = ad_step(dt, states[:,j], adjoint_old, rho, sigma, beta)
+        adjoint_variables[:,j] .= d_state_now[:]
 
-    # this statement checks if we have a data point at the current iteration, and if so adjusts
-    # the adjoint value 
+        # this statement checks if we have a data point at the current iteration, and if so adjusts
+        # the adjoint value 
+        
 
-    ## This needs to be fixed to work with the Lorenz model, currently still set up for the pendulum ##################
-    if j in data_steps
+        if j in data_steps
 
-        adjoint_variables[2,j] = adjoint_variables[2,j] + 1/(length(data_steps)) * (states[2,j] - data[2,j])^2 
+            adjoint_variables[3,j] = adjoint_variables[3,j] + 2/(length(data_steps)) * (states[3,j] - data[3,Int(ceil(j/(data_steps[2] - data_steps[1])))])
+
+        end
 
     end
 
-end
-
-return states, adjoint_variables 
+    return states, adjoint_variables 
 
 end
