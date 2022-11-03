@@ -311,7 +311,7 @@ function train(trajectories, params, args)
         for (x, y) in train_data
             y = reshape(y, 1, length(y))
             x, y = device(x), device(y) ## transfer data to device
-            gs = gradient(() -> mse(model(x), y), ps) ## compute gradient
+            gs = Flux.gradient(() -> mse(model(x), y), ps) ## compute gradient
             Flux.Optimise.update!(opt, ps, gs) ## update parameters
         end
         
@@ -319,8 +319,8 @@ function train(trajectories, params, args)
         # train_loss, ŷ_vec_train, train_acc = loss_and_accuracy(train_data, model, device)
         # test_loss, ŷ_vec_test, test_acc = loss_and_accuracy(test_data, model, device)
 
-        train_loss, ŷ_vec_train, train_acc = ridge_regression_loss(train_data, model, device, 0.1)
-        test_loss, ŷ_vec_test, test_acc = ridge_regression_loss(test_data, model, device, 0.1)
+        train_loss, ŷ_vec_train, train_acc = loss_and_accuracy(train_data, model, device)
+        test_loss, ŷ_vec_test, test_acc = loss_and_accuracy(test_data, model, device)
         println("Epoch=$epoch")
         println("train_loss = $train_loss, train_accuracy = $train_acc")
         println("test_loss = $test_loss, test_accuracy = $test_acc")

@@ -21,7 +21,7 @@ include("plotting.jl")
 Random.seed!(420)
 N_data=10000
 lambda = 0.01
-sigma = 10 .+ 10 .* randn(1, N_data)
+sigma = 10 .+ 20 .* randn(1, N_data)
 rho = hcat(28.0)
 beta = hcat(8/3)
 
@@ -41,7 +41,7 @@ trajectories = generate_dataset(generate_dataset_args)
 
 
 # set train args and train
-epochs=250
+epochs=10
 
 args = train_Args(Int(floor(0.8 * N_data)), 
                   Int(floor(0.1 * N_data)), 
@@ -50,7 +50,7 @@ args = train_Args(Int(floor(0.8 * N_data)),
                   100, 
                   epochs, 
                   gpu,
-                  build_model)
+                  two_layer_model)
 
 
 train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec = train(trajectories, sigma, args)
