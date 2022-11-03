@@ -18,54 +18,59 @@ if has_cuda()		# Check if CUDA is available
     CUDA.allowscalar(false)
 end
 
-# generates N_data different trajectories to use as our data points 
-function generate_dataset(😄::generate_dataset_Args)
-    @unpack_generate_dataset_Args 😄
+function generate_dataset(s::generate_dataset_Args)
+    @unpack_generate_dataset_Args s 
     all_trajectories = zeros(3, T, N_data)
 
-    if length(rho) > 1
-        for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma[1], beta[1])
-            all_trajectories[:, :, k] = trajectory
-        end
-    end
-    if length(sigma) > 1 
-        for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[k], beta[1])
-            all_trajectories[:, :, k] = trajectory
-        end
-    end
-    if length(beta) > 1 
-        for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[1], beta[k])
-            all_trajectories[:, :, k] = trajectory
-        end
-    end
+    # determine which parameter is preserved by checking which matrix length exceeds 1
+    param_strs = ["rho";"sigma";"beta"]
+    is_perturbed = ([length(rho);length(sigma);length(beta)] .> (1,1,1)) 
+    param_pert = param_strs[is_perturbed][1] 
+    param_unpert1 = param_strs[.!is_perturbed][1]
+    param_unpert2 = param_strs[.!is_perturbed][2]
+
+    for k = 1:N_data
+        # hacky - sets [param]_indexed=[param][i] where i=k if perturbed, i=1 else }
+        eval(Meta.parse(param_pert * "_indexed=" * param_pert * "[" * string(k) * "]"))
+        eval(Meta.parse(param_unpert1 * "_indexed=" * param_unpert1 * "[1]"))
+        eval(Meta.parse(param_unpert2 * "_indexed=" * param_unpert2 * "[1]"))
+        trajectory=generate_trajectory(T,
+                                       dt,
+                                       state0,
+                                       rho_indexed,
+                                       sigma_indexed,
+                                       beta_indexed)
+        #trajectory = generate_trajectory(T, dt, state0, gen_traj_args)
+        all_trajectories[:, :, k] = trajectory
+     end
 
     return all_trajectories 
-
 end
 
 function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
-
     all_trajectories = zeros(3, T, N_data)
 
-    if length(rho) > 1
-        for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[k], sigma[1], beta[1])
-            all_trajectories[:, :, k] = trajectory[:, :]
-        end
-    elseif length(sigma) > 1 
-        for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[k], beta[1])
-            all_trajectories[:, :, k] = trajectory[:, :]
-        end
-    elseif length(beta) > 1 
-        for k = 1:N_data
-            trajectory = generate_trajectory(T, dt, state0, rho[1], sigma[1], beta[k])
-            all_trajectories[:, :, k] = trajectory[:, :]
-        end
-    end
+    # determine which parameter is preserved by checking which matrix length exceeds 1
+    param_strs = ["rho";"sigma";"beta"]
+    is_perturbed = ([length(rho);length(sigma);length(beta)] .> (1,1,1)) 
+    param_pert = param_strs[is_perturbed][1] 
+    param_unpert1 = param_strs[.!is_perturbed][1]
+    param_unpert2 = param_strs[.!is_perturbed][2]
+
+    for k = 1:N_data
+        # hacky - sets [param]_indexed=[param][i] where i=k if perturbed, i=1 else }
+        eval(Meta.parse(param_pert * "_indexed=" * param_pert * "[" * string(k) * "]"))
+        eval(Meta.parse(param_unpert1 * "_indexed=" * param_unpert1 * "[1]"))
+        eval(Meta.parse(param_unpert2 * "_indexed=" * param_unpert2 * "[1]"))
+        trajectory=generate_trajectory(T,
+                                       dt,
+                                       state0,
+                                       rho_indexed,
+                                       sigma_indexed,
+                                       beta_indexed)
+        #trajectory = generate_trajectory(T, dt, state0, gen_traj_args)
+        all_trajectories[:, :, k] = trajectory
+     end
 
     return all_trajectories 
 
@@ -208,10 +213,6 @@ end
 
 function train(trajectories, params, args)
 
-    # Load Data
-    train_data, test_data, = batch_data(trajectories, params, args)
-
-    
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
         CUDA.allowscalar(false)
@@ -222,10 +223,10 @@ function train(trajectories, params, args)
     end
 
     # Load Data
-    train_data, test_data, _ = batch_data(trajectories, params, args)
+    train_data, test_data, = batch_data(trajectories, params, args)
 
     ## Construct model
-    model = regression_model(length(train_data.data[1][:,1])) |> device
+    model = args.model(length(train_data.data[1][:,1])) |> device
     ps = Flux.params(model) ## model's trainable parameters
 
     loss(x,y) = mse(m(x), y)

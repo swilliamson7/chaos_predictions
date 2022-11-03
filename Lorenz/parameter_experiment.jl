@@ -14,12 +14,14 @@ using LaTeXStrings
 include("create_structs.jl")
 include("lorenz_model.jl")
 include("neural_net_lorenz.jl")
+#include("conv.jl")
 include("plotting.jl")
 
+
 Random.seed!(420)
-N_data=100000
+N_data=10000
 lambda = 0.01
-sigma_perturb_vec = 10 .+ 10 .* randn(1, N_data)
+sigma = 10 .+ 10 .* randn(1, N_data)
 
 # struct generate_dataset_Args loaded from create_structs.jl
 
@@ -28,7 +30,7 @@ generate_dataset_args = generate_dataset_Args(N_data=N_data,
                                               dt=0.001, 
                                               state0=[1.0;0.0;0.0], 
                                               rho=hcat(28.0), 
-                                              sigma=sigma_perturb_vec, 
+                                              sigma=sigma, 
                                               beta=hcat(10/3) )
 
 # if dataset_filename exists in out_dir, load it. Else, create and save it.
@@ -44,10 +46,11 @@ args = train_Args(Int(floor(0.8 * N_data)),
                   3e-4, 
                   100, 
                   epochs, 
-                  gpu)
+                  gpu,
+                  build_model)
 
 
-train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec = train(trajectories, sigma_perturb_vec, args)
+train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec = train(trajectories, sigma, args)
 
 # plot some predicted versus true parameters output from training
 ŷ_vec_train = ŷ_vec_train'

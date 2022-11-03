@@ -18,4 +18,5 @@ end
     batchsize::Int       # batch size
     epochs::Int          # number of epochs
     device::Function     # set as gpu, if gpu available
+    model::Function      # model
 end
