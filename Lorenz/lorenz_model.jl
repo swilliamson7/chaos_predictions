@@ -90,7 +90,8 @@ function ad_step(dt, state_now, adjoint_old, rho, sigma, beta)
 end
 
 # This function will put together all of the above and run the entire 
-# forwards-backwards part of the adjoint problem. 
+# forwards-backwards part of the adjoint problem, and return the gradient 
+# with respect to our unknown parameter 
 # Inputs: 
 #       data_steps - the steps which will incorporate data 
 #       data - the data values themselves
@@ -100,10 +101,7 @@ end
 #       params - a structure containing the parameters in the Lorenz model, 
 #                rho, sigma, and beta 
 # Outputs: 
-#       states - all of the results from the forward run with the 
-#                inputted parameters
-#       adjoint_variables - the adjoint variables (Lagrange multipliers)
-#                that were computed 
+#       gradient - the gradient of model w.r.t. sigma 
 function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
 
     states = generate_trajectory(T, dt, state0, rho, sigma, beta)
@@ -125,11 +123,14 @@ function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
 
         if j in data_steps
 
-            adjoint_variables[3,j] = adjoint_variables[3,j] + 2/(length(data_steps)) * (states[3,j] - data[3,Int(ceil(j/(data_steps[2] - data_steps[1])))])
+            adjoint_variables[:,j] = adjoint_variables[:,j] + 2/(length(data_steps)) * (states[:,j] - data[:,Int(ceil(j/(data_steps[2] - data_steps[1])))])
 
         end
 
     end
+
+    # now we want to use the above computed values to find the gradient w.r.t. the unknown parameter, in this case 
+    # sigma 
 
     return states, adjoint_variables 
 
