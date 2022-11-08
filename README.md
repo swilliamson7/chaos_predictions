@@ -16,6 +16,8 @@ We aim to consider these questions for a few different systems. The code for eac
 
 Each folder contains a number of scripts (should I describe them???)
 
+-----------------
+
 00. Read the papers Patrick sent
 
 0. Maybe try setting up the chaotic pendulum problem the way that they did in the paper, just as a learning tool. 
