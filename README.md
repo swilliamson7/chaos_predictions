@@ -12,10 +12,9 @@ Note -- when we say we want to use the adjoint method for parameter estimation w
 
 # Overview of repository contents
 
-We aim to consider these questions for a few different systems. The code for each system is in it's corresponding folder (i.e., Lorenz code is in Lorenz). 
+We aim to consider these questions for a few different systems. The code for each system is in it's corresponding folder (i.e., Lorenz code is in Lorenz). The systems we have considered thus far are (1) a one-dimensional forced pendulum and (2) the Lorenz model. We aim to move to a true ocean model (using Ocenanigans) eventually.
 
-
-Attempting to run both a modified adjoint method as well as a combination of machine learning and data assimilation. The steps that we can try to complete are:
+Each folder contains a number of scripts (should I describe them???)
 
 00. Read the papers Patrick sent
 
