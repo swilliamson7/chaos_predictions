@@ -101,7 +101,8 @@ end
 #       params - a structure containing the parameters in the Lorenz model, 
 #                rho, sigma, and beta 
 # Outputs: 
-#       gradient - the gradient of model w.r.t. sigma 
+#       gradient - the gradient of model w.r.t. sigma (the unknown parameter, 
+#                  might change later to be a different parameter)
 function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
 
     states = generate_trajectory(T, dt, state0, rho, sigma, beta)

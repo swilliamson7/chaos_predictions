@@ -7,7 +7,6 @@ using Parameters: @with_kw
 using CUDA
 using MLDatasets
 using JLD2 
-using Debugger
 using LinearAlgebra
 
 include("create_structs.jl")
@@ -99,21 +98,6 @@ function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
 
 end
 
-# # Takes all of the trajectories and transforms into a matrix, batched as 
-# # train, validation, and test. Specifically, the output of Flux.flatten(data)
-# # is a matrix where each column is one data point (i.e. three-dimensional trajectory) 
-# function flatten_trajectories(trajectories, Args::train_Args)
-
-#     train_trajectories = Flux.flatten(trajectories[:, :, 1:Args.n_train])
-
-#     validation_trajectories = Flux.flatten(trajectories[:, :, Args.n_train + 1:Args.n_validation + Args.n_train])
-
-#     test_trajectories = Flux.flatten(trajectories[:, :, Args.n_validation + Args.n_train + 1:end])
-
-#     return train_trajectories, validation_trajectories, test_trajectories
-    
-# end
-
 # After generating a bunch of different trajectories in generate_data we split them into the 
 # canonical train, validate, test groups here. 
 # Input: 
@@ -147,9 +131,10 @@ end
 #       2. Parsing the trajectories into train, test, and validation
 #       3. Pairing them with the parameter values and subsequently creating DataLoader objects 
 # Input: 
-#       trajectories - 
-#       params - 
-#       Args - 
+#       trajectories - all of the data points generated with forward runs and slightly perturbed uncertain parameters
+#       params - all of the parameters associated with the data points. should share the same indices (i.e. params[1]
+#                generated trajectories[1])
+#       Args - a structure containing information about the neural network set up, see definition for contents 
 function batch_data(trajectories, params, Args)
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
@@ -172,7 +157,8 @@ function batch_data(trajectories, params, Args)
 end
 
 # This is where we actually begin to build a neural net. This function is for if we want to run a 
-# 2-layer NN, the first layer and second layer are both set to have 1000 nodes. 
+# 2-layer NN, the first layer and second layer are both set to have 1000 nodes. Can easily 
+# be modified to contain more layers, different numbers of nodes, etc.
 function two_layer_model(trajectory_size; param_out=1)
     return Chain(
  	        Dense(prod(trajectory_size), 1000, relu),
@@ -191,13 +177,16 @@ end
 # computed by our model. The loss is just the mean-squared error, and 
 # accuracy is the relative error 
 # Input: 
-#       data_loader - 
-#       model - 
-#       device - 
+#       data_loader - an object for use with Flux, contains pairs (x, y) where x is a data point and 
+#                     y is the associated parameter
+#       model - this is again a Flux object, dependent on which type of neural network we want to run.
+#               the two options available at the time of writing this are (1) a two-layer model and (2)
+#               a ridged regression model 
+#       device - another option for Flux, if gpu is available can set to run on gpu, otherwise cpu 
 # Output:
-#       loss / num - 
-#       ŷ_vec - 
-#       acc / num - 
+#       loss / num - the mean squared loss between predicted parameters and true parameters
+#       ŷ_vec - all of the predicted parameters
+#       acc / num - accuracy of our prediction (the relative error between predicted and true parameter values)
 function loss_and_accuracy(data_loader, model, device)
     acc = 0
     loss = 0.0f0
