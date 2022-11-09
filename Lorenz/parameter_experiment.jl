@@ -28,7 +28,7 @@ beta = hcat(8/3)
 # struct generate_dataset_Args loaded from create_structs.jl
 
 generate_dataset_args = generate_dataset_Args(N_data=N_data, 
-                                              T=100, 
+                                              T=1000, 
                                               dt=0.001, 
                                               state0=[1.0;0.0;0.0], 
                                               rho=rho, 
@@ -38,7 +38,8 @@ generate_dataset_args = generate_dataset_Args(N_data=N_data,
 
 # if dataset_filename exists in out_dir, load it. Else, create and save it.
 trajectories = generate_dataset(generate_dataset_args)
-
+every_nth = 75
+not_full_trajectories = trajectories[:, 1:every_nth:T, :] + 0.01 .* randn(3, length(1:every_nth:T), N_data)
 
 # set train args and train
 epochs=10
@@ -53,7 +54,7 @@ args = train_Args(Int(floor(0.8 * N_data)),
                   two_layer_model)
 
 
-train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec = train(trajectories, sigma, args)
+train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec = train(not_full_trajectories, sigma, args)
 
 # plot some predicted versus true parameters output from training
 ŷ_vec_train = ŷ_vec_train'
