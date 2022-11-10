@@ -110,7 +110,7 @@ function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
     # next we want to run the adjoint problem backward and compute 
     # the adjoint variables 
     adjoint_variables = zeros(3, T)
-    adjoint_variables[:, end] = ones(3)
+    adjoint_variables[:, end] = zeros(3)
 
     for j = T-1:-1:1
 
@@ -121,7 +121,6 @@ function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
         # this statement checks if we have a data point at the current iteration, and if so adjusts
         # the adjoint value 
         
-
         if j in data_steps
 
             adjoint_variables[:,j] = adjoint_variables[:,j] + 2/(length(data_steps)) * (states[:,j] - data[:,Int(ceil(j/(data_steps[2] - data_steps[1])))])
@@ -130,9 +129,41 @@ function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
 
     end
 
-    # now we want to use the above computed values to find the gradient w.r.t. the unknown parameter, in this case 
-    # sigma 
-
     return states, adjoint_variables 
 
 end
+
+function gradient(adjoint_variables, states, T)
+
+    total_grad = 0.0
+
+    for t = 1:T
+        total_grad += -2 * adjoint_variables[1, t] * states[2, t]
+    end
+
+    return total_grad 
+
+end 
+
+function grad_descent(sigma0, M, data_steps, data, dt, T, state0, rho, beta)
+
+    sigma_old = sigma0
+    sigma_new = 0.0
+
+    gamma = 0.001
+
+    for k = 1:M 
+
+        all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho, sigma0, beta)
+        total_grad = gradient(adjoint_variables, all_states_adjoint, T)
+
+        sigma_new = sigma_old + gamma * total_grad
+
+        sigma_old = sigma_new 
+        sigma_new = 0.0
+
+    end
+
+    return sigma_old
+
+end 
