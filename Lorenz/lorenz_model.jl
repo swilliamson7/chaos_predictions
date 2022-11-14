@@ -138,7 +138,7 @@ function gradient(adjoint_variables, states, T)
     total_grad = 0.0
 
     for t = 1:T
-        total_grad += -2 * adjoint_variables[1, t] * states[2, t]
+        total_grad += dt * adjoint_variables[1, t] * (states[2, t] - states[1, t])
     end
 
     return total_grad 
@@ -150,20 +150,38 @@ function grad_descent(sigma0, M, data_steps, data, dt, T, state0, rho, beta)
     sigma_old = sigma0
     sigma_new = 0.0
 
-    gamma = 0.001
+    gamma = .01
 
     for k = 1:M 
 
         all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho, sigma0, beta)
         total_grad = gradient(adjoint_variables, all_states_adjoint, T)
 
+        @show total_grad
+
         sigma_new = sigma_old + gamma * total_grad
 
         sigma_old = sigma_new 
         sigma_new = 0.0
+
+        @show sigma_old
 
     end
 
     return sigma_old
 
 end 
+
+function data_misfit(x, data, data_steps)
+
+    total_misfit = 0.0 
+
+    for j in data_steps
+
+        total_misfit += sum((data[:, j] - x[:, j])' * (data[:, j] - x[:, j]))
+
+    end
+
+    return total_misfit 
+
+end

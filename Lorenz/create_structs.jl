@@ -19,4 +19,14 @@ end
     epochs::Int          # number of epochs
     device::Function     # set as gpu, if gpu available
     model::Function      # model
+    loss::Function
+end
+
+
+mutable struct Lorenz_parameters 
+
+    rho::Float64
+    sigma::Float64
+    beta::Float64
+
 end

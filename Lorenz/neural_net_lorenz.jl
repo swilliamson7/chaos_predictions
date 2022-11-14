@@ -217,7 +217,7 @@ end
 #       acc - 
 #       squared_error - 
 #       average - 
-function ridge_regression_loss(data_loader, model, device, lambda)
+function ridge_regression_loss(data_loader, model, device; lambda = 0.1)
     acc = 0
     average = 0
     loss = 0.0f0
@@ -308,8 +308,8 @@ function train(trajectories, params, args)
         # train_loss, ŷ_vec_train, train_acc = loss_and_accuracy(train_data, model, device)
         # test_loss, ŷ_vec_test, test_acc = loss_and_accuracy(test_data, model, device)
 
-        train_loss, ŷ_vec_train, train_acc = ridge_regression_loss(train_data, model, device, 0.01)
-        test_loss, ŷ_vec_test, test_acc = ridge_regression_loss(test_data, model, device, 0.01)
+        train_loss, ŷ_vec_train, train_acc = args.loss(train_data, model, device)
+        test_loss, ŷ_vec_test, test_acc = args.loss(test_data, model, device)
         println("Epoch=$epoch")
         println("train_loss = $train_loss, train_accuracy = $train_acc")
         println("test_loss = $test_loss, test_accuracy = $test_acc")

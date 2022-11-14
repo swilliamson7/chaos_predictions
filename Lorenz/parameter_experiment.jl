@@ -19,7 +19,7 @@ include("plotting.jl")
 
 
 Random.seed!(420)
-N_data=10000
+N_data=100000
 lambda = 0.01
 sigma = 10 .+ 5 .* randn(1, N_data)
 rho = hcat(28.0)
@@ -49,10 +49,11 @@ args = train_Args(Int(floor(0.8 * N_data)),
                   Int(floor(0.1 * N_data)), 
                   Int(floor(0.1 * N_data)),  
                   3e-4, 
-                  100, 
+                  150, 
                   epochs, 
                   gpu,
-                  ridged_regression_model)
+                  ridged_regression_model,
+                  ridge_regression_loss)
 
 
 train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec = train(not_full_trajectories, sigma, args)
