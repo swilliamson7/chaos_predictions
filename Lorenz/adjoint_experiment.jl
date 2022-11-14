@@ -7,7 +7,7 @@ include("lorenz_model.jl")
 Random.seed!(420)
 
 # total time steps to run 
-T = 15
+T = 10
 dt = 0.01 
 
 # initial condition
@@ -31,7 +31,7 @@ data = all_states_true[:, data_steps] #+ 0.01 .* randn(3, length(data_steps))
 # all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho_true, sigma_true + .1, beta_true)
 
 M = 500
-sigma0 = 10.5
+sigma0 = 12
 
 
 sigma = grad_descent(sigma0, M, data_steps, data, dt, T, state0, 28.0, 8/3)

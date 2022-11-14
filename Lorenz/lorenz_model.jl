@@ -145,26 +145,33 @@ function gradient(adjoint_variables, states, T)
 
 end 
 
+# This function will run gradient descent for the Lorenz model, using the gradient 
+# computed from the adjoint method. 
+# Input: sigma0 - an initial guess for the parameter 
+#        M - number of steps of gradient descent to run (not a good stopping method, change later)
+#        data_steps - needed for the adjoint, these are the time steps where we have observations
+#        data - data that we have at data_steps 
+#        dt - timestep size
+#        T - total integration time 
+#        state0 - initial state for the Lorenz model 
+#        rho - fixed parameter rho
+#        beta - fixed parameter beta 
 function grad_descent(sigma0, M, data_steps, data, dt, T, state0, rho, beta)
 
     sigma_old = sigma0
     sigma_new = 0.0
 
-    gamma = .01
+    gamma = 1
 
     for k = 1:M 
 
         all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho, sigma0, beta)
         total_grad = gradient(adjoint_variables, all_states_adjoint, T)
 
-        @show total_grad
-
         sigma_new = sigma_old + gamma * total_grad
 
         sigma_old = sigma_new 
         sigma_new = 0.0
-
-        @show sigma_old
 
     end
 
@@ -172,6 +179,11 @@ function grad_descent(sigma0, M, data_steps, data, dt, T, state0, rho, beta)
 
 end 
 
+# This function was largely built so that we could check the gradient values that we compute with 
+# the adjoint variables. 
+# Input: x - all of the state values (a 3 by T matrix of values)
+#        data - data available for the model 
+#        data_steps - the steps at which data is available 
 function data_misfit(x, data, data_steps)
 
     total_misfit = 0.0 

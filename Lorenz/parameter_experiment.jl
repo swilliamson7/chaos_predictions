@@ -8,7 +8,6 @@ using CUDA
 using MLDatasets
 using JLD2, Random, Plots
 using Plots.PlotMeasures
-using Debugger
 using LaTeXStrings
 
 include("create_structs.jl")
@@ -52,7 +51,7 @@ args = train_Args(Int(floor(0.8 * N_data)),
                   150, 
                   epochs, 
                   gpu,
-                  ridged_regression_model,
+                  ridges_regression_model,
                   ridge_regression_loss)
 
 

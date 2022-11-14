@@ -169,7 +169,7 @@ end
 # Same as above except now we're using a single input layer and output layer model. 
 # this is just linear regression as we're using the identity operator to take us from 
 # input to output. For use with our ridged regression model 
-function ridged_regression_model(trajectory_size; param_out=1)
+function ridge_regression_model(trajectory_size; param_out=1)
     return Dense(prod(trajectory_size), param_out, identity)
 end
 
