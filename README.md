@@ -8,13 +8,31 @@ We'd like to try and investigate how the adjoint method compares to a neural net
 2. Could we potentially use a combination of ML and the adjoint to better predict an uncertain parameter?
 3. Can we quantify, in a rigorous mathematical sense, what ML does to predict a parameter that the adjoint method cannot?
 
-Note -- when we say we want to use the adjoint method for parameter estimation what we're hiding is a full description: really we (1) use the adjoint method to compute a gradient of our system w.r.t. the uncertain parameter (2) use that gradient with an optimization method (in our case we'll be using ????) and then (3) hopefully converge to a closer parameter. 
+Note -- when we say we want to use the adjoint method for parameter estimation what we're hiding is a full description: really we (1) use the adjoint method to compute a gradient of our system w.r.t. the uncertain parameter (2) use that gradient with an optimization method (in our case we'll be using gradient descent and seeing what results this gives) and then (3) hopefully converge to a closer parameter. 
 
 # Overview of repository contents
 
 We aim to consider these questions for a few different systems. The code for each system is in it's corresponding folder (i.e., Lorenz code is in Lorenz). The systems we have considered thus far are (1) a one-dimensional forced pendulum and (2) the Lorenz model. We aim to move to a true ocean model (using Ocenanigans) eventually.
 
-Each folder contains a number of scripts (should I describe them???)
+Each folder contains a number of scripts. In general, all functions needed to run our experiments are contained in scripts labeled 
+    1. create_structs.jl
+    2. [which model]_model.jl
+    3. neural_net_[which model].jl
+    4. create_structs.jl
+    5. plotting.jl
+where [which model] means to fill in with the desired one. Then experiments are run in the Julia scripts with "experiment" in the name. In general, we focused more on the lorenz model thus far. If one wants to try and run our code for the Lorenz model, one only needs to run say, parameter_experiment.jl. Download the folder titled "Lorenz," navigate to it in the terminal (or open in the directory in VSCode or your favorite editor), and then run the line 
+
+```julia
+include("parameter_experiment.jl"
+```
+
+which will include all of the scripts needed to run the experiment and output some resulting plots showing test parameters versus the predicted values. 
+
+# Lorenz model 
+
+We ran two types of experiments with the Lorenz model thus far. The first was simple: we generated multiple trajectories of the Lorenz model with slightly varying $\sigma$ values, gave as input to a ridge regression model sparse noisy observations from these timeseries, and attempted to predict what $\sigma$ value was used to create them. The second experiment was to see what happened if we used the output of the 
+
+# Barotropic gyre model 
 
 -----------------
 
