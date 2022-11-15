@@ -51,7 +51,7 @@ args = train_Args(Int(floor(0.8 * N_data)),
                   150, 
                   epochs, 
                   gpu,
-                  ridges_regression_model,
+                  ridge_regression_model,
                   ridge_regression_loss)
 
 

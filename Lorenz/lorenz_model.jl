@@ -14,6 +14,7 @@ function forward_step(out, dt, x, rho, sigma, beta)
     dx[3] = x[1] * x[2] - beta * x[3] 
 
     new = zeros(3)
+
     new[1] = x[1] + dt * dx[1]
     new[2] = x[2] + dt * dx[2] 
     new[3] = x[3] + dt * dx[3]
@@ -137,8 +138,8 @@ function gradient(adjoint_variables, states, T)
 
     total_grad = 0.0
 
-    for t = 1:T
-        total_grad += dt * adjoint_variables[1, t] * (states[2, t] - states[1, t])
+    for t = 1:T-1
+        total_grad = total_grad + dt * adjoint_variables[1, t+1] * (states[2, t] - states[1, t])
     end
 
     return total_grad 
@@ -161,14 +162,16 @@ function grad_descent(sigma0, M, data_steps, data, dt, T, state0, rho, beta)
     sigma_old = sigma0
     sigma_new = 0.0
 
-    gamma = 1
+    gamma = .1
 
     for k = 1:M 
 
-        all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho, sigma0, beta)
+        all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho, sigma_old, beta)
         total_grad = gradient(adjoint_variables, all_states_adjoint, T)
 
-        sigma_new = sigma_old + gamma * total_grad
+        @show total_grad
+
+        sigma_new = sigma_old - gamma * total_grad
 
         sigma_old = sigma_new 
         sigma_new = 0.0
@@ -190,10 +193,10 @@ function data_misfit(x, data, data_steps)
 
     for j in data_steps
 
-        total_misfit += sum((data[:, j] - x[:, j])' * (data[:, j] - x[:, j]))
+        total_misfit = total_misfit + sum((data[:, j] - x[:, j])' * (data[:, j] - x[:, j]))
 
     end
 
-    return total_misfit 
+    return total_misfit / length(data_steps)
 
 end

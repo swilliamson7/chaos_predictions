@@ -207,16 +207,19 @@ end
 # same as above except now computing the ridged regression loss via penalizing the 
 # weight operator via a parameter lambda, rather than the mean-squared error 
 # Input: 
-#       data_loader - 
-#       model - 
-#       device - 
-#       lambda - 
+#       data_loader - the type of object that Flux stores the pairs (data, parameter) in
+#       model -  which of the two model options to run, i.e. NN or ridge regression
+#       device - this is an option that Flux has, if the computer we're running on 
+#                has a gpu capable of being used for computation, can try and specify
+#                here to run on the gpu, otherwise put cpu (we haven't tested this 
+#                code on a gpu yet)
+#       lambda - the hyperparameter used when computing the loss function
 # Output:
-#       loss - 
-#       ŷ_vec - 
-#       acc - 
-#       squared_error - 
-#       average - 
+#       loss - MSE loss with the added lambda * weights^2 for ridge regression
+#       ŷ_vec - the predicted parameter values
+#       acc - the accuracy of the predicted values, i.e. relative error
+#       squared_error - MSE of predicted versus true
+#       average - average parameter value
 function ridge_regression_loss(data_loader, model, device; lambda = 0.1)
     acc = 0
     average = 0
@@ -268,6 +271,8 @@ end
 
 function train(trajectories, params, args)
 
+    # removing this piece broke the code even though we never run on a GPU, 
+    # so just leaving it here 
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
         CUDA.allowscalar(false)
