@@ -134,7 +134,7 @@ function adjoint(data_steps, data, dt, T, state0, rho, sigma, beta)
 
 end
 
-function gradient(adjoint_variables, states, T)
+function gradient(adjoint_variables, states, dt, T)
 
     total_grad = 0.0
 
@@ -167,9 +167,9 @@ function grad_descent(sigma0, M, data_steps, data, dt, T, state0, rho, beta)
     for k = 1:M 
 
         all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho, sigma_old, beta)
-        total_grad = gradient(adjoint_variables, all_states_adjoint, T)
+        total_grad = gradient(adjoint_variables, all_states_adjoint, dt, T)
 
-        @show total_grad
+       #@show total_grad
 
         sigma_new = sigma_old - gamma * total_grad
 

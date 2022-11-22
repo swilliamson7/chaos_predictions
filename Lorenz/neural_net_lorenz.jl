@@ -153,7 +153,7 @@ function batch_data(trajectories, params, Args)
     test_data = DataLoader((x_test, y_test), batchsize=Args.batchsize)
     validation_data = DataLoader((x_validation, y_validation), batchsize=Args.batchsize)
 
-    return train_data, test_data , validation_data
+    return train_data, test_data, validation_data
 end
 
 # This is where we actually begin to build a neural net. This function is for if we want to run a 
@@ -170,7 +170,7 @@ end
 # this is just linear regression as we're using the identity operator to take us from 
 # input to output. For use with our ridged regression model 
 function ridge_regression_model(trajectory_size; param_out=1)
-    return Dense(prod(trajectory_size), param_out, identity)
+    return Dense(trajectory_size, param_out, relu)
 end
 
 # This function computes the loss and accuracy of predicted parameters
@@ -220,7 +220,7 @@ end
 #       acc - the accuracy of the predicted values, i.e. relative error
 #       squared_error - MSE of predicted versus true
 #       average - average parameter value
-function ridge_regression_loss(data_loader, model, device; lambda = 0.1)
+function score(data_loader, model, device)
     acc = 0
     average = 0
     loss = 0.0f0
@@ -233,10 +233,10 @@ function ridge_regression_loss(data_loader, model, device; lambda = 0.1)
         x, y = device(x), device(y)
         ŷ = model(x)
 
-        squared_error = mse(ŷ, y, agg=sum)
+        squared_error = mse(ŷ, y)
         average = average + sum(y) 
 
-        loss += squared_error + lambda * sum(model.weight.^2)
+        loss += squared_error 
         num +=  size(x)[end]
         acc += norm(ŷ-y)/norm(y)
         
@@ -245,26 +245,6 @@ function ridge_regression_loss(data_loader, model, device; lambda = 0.1)
     end
 
     return loss / num, ŷ_vec, acc / num, squared_error, average / num 
-
-end
-
-function test_model(data, model, device)
-
-    ŷ_test_vec = []
-    squared_error = 0.0
-    num = 0.0 
-    for (x,y) in data
-
-        y = reshape(y, 1, length(y))
-        x, y = device(x), device(y)
-        ŷ = model(x)
-        num +=  size(x)[end]
-        ŷ_test_vec = [ŷ_test_vec ŷ]
-        squared_error += mse(ŷ, y, agg=sum)
-
-    end
-
-    return ŷ_test_vec, squared_error / num
 
 end
 
@@ -287,47 +267,109 @@ function train(trajectories, params, args)
 
     ## Construct model
     model = args.model(length(train_data.data[1][:,1])) |> device
-    ps = Flux.params(model) ## model's trainable parameters
+    model_params = Flux.params(model) ## model's trainable parameters
 
-    loss(x,y) = mse(m(x), y)
+    loss(x,y) = mse( x, y )
 
     ## Training
-    evalcb = () -> @show(loss_all(train_data, m, device))
+
     opt = ADAM(args.η)
 		
-    ŷ_vec_train=[]
-    ŷ_vec_test = []
+    predicted_params_train = []
+    predicted_params_test = []
 
     train_acc_vec = []
     test_acc_vec = []
 
     for epoch in 1:args.epochs
+
         for (x, y) in train_data
             y = reshape(y, 1, length(y))
             x, y = device(x), device(y) ## transfer data to device
-            gs = Flux.gradient(() -> mse(model(x), y), ps) ## compute gradient
-            Flux.Optimise.update!(opt, ps, gs) ## update parameters
+            gs = Flux.gradient(() -> loss(model(x), y), model_params) ## compute gradient
+            Flux.Optimise.update!(opt, model_params, gs) ## update weights
         end
         
-        ## Report on train and test
-        # train_loss, ŷ_vec_train, train_acc = loss_and_accuracy(train_data, model, device)
-        # test_loss, ŷ_vec_test, test_acc = loss_and_accuracy(test_data, model, device)
 
-        train_loss, ŷ_vec_train, train_acc = args.loss(train_data, model, device)
-        test_loss, ŷ_vec_test, test_acc = args.loss(test_data, model, device)
+        train_score, ŷ_vec_train, train_acc = args.score(train_data, model, device)
+        test_score, ŷ_vec_test, test_acc = args.score(test_data, model, device)
+
+        push!(predicted_params_train, ŷ_vec_train)
+        push!(predicted_params_test, ŷ_vec_test)
+
+        push!(train_acc_vec, train_acc)
+        push!(test_acc_vec, test_acc)
+
         println("Epoch=$epoch")
-        println("train_loss = $train_loss, train_accuracy = $train_acc")
-        println("test_loss = $test_loss, test_accuracy = $test_acc")
+        println("Train score = $train_score, Train accuracy = $train_acc")
+        println("Test score = $test_score, Test accuracy = $test_acc")
+
     end
 
-    #ŷ_vec_test, test_squared_error = test_model(test_data, model, device)
 
-    # # @show accuracy(train_data, m)
-
-    # # @show accuracy(test_data, m)
-
-    return train_data, test_data, ŷ_vec_train, ŷ_vec_test, train_acc_vec, test_acc_vec #, test_squared_error
+    return train_data, test_data, predicted_params_train, predicted_params_test, train_acc_vec, test_acc_vec 
 
 end
 
+function train_RR(trajectories, params, args; lambda = .01)
 
+    # removing this piece broke the code even though we never run on a GPU, 
+    # so just leaving it here 
+    if CUDA.functional() && args.use_cuda
+        @info "Training on CUDA GPU"
+        CUDA.allowscalar(false)
+        device = gpu
+    else
+        @info "Training on CPU"
+        device = cpu
+    end
+
+    # Load Data
+    train_data, test_data, = batch_data(trajectories, params, args)
+
+    ## Construct model
+    model = args.model(length(train_data.data[1][:,1])) |> device
+    model_params = Flux.params(model)               ## model's weights
+
+    loss(x, y) = mse( x, y, agg=mean ) #+ lambda * sum(weights[1].^2)
+ 
+    ## Training
+
+    opt = ADAM(args.η)
+		
+    predicted_params_train = []
+    predicted_params_test = []
+
+    train_acc_vec = []
+    test_acc_vec = []
+
+    for epoch in 1:args.epochs
+
+        for (x, y) in train_data
+            y = reshape(y, 1, length(y))
+            x, y = device(x), device(y) ## transfer data to device
+            # gs = Flux.gradient(() -> loss(model(x), y, copy(model_params)), model_params) ## compute gradient
+            gs = Flux.gradient(() -> loss(model(x), y), model_params) ## compute gradient
+            Flux.Optimise.update!(opt, model_params, gs) ## update parameters
+        end
+
+        train_score, ŷ_vec_train, train_acc, _, _ = args.score(train_data, model, device)
+        test_score, ŷ_vec_test, test_acc, _, _ = args.score(test_data, model, device)
+        
+        push!(predicted_params_train, ŷ_vec_train)
+        push!(predicted_params_test, ŷ_vec_test)
+
+        push!(train_acc_vec, train_acc)
+        push!(test_acc_vec, test_acc)
+
+        println("Epoch=$epoch")
+        println("Train score = $train_score, Train accuracy = $train_acc")
+        println("Test score = $test_score, Test accuracy = $test_acc")
+
+    end
+
+
+    return train_data, test_data, predicted_params_train, predicted_params_test, train_acc_vec, test_acc_vec 
+
+    
+end

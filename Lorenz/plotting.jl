@@ -9,10 +9,10 @@ end
 
 # plot accuracy
 function plot_acc(epochs, acc_vec, label)
-    return plot(1:epochs, acc_vec, seriestype = :scatter, label = label, xlabel="epoch", ylabel=L"\frac{||\theta_{pred}-\theta_{true}||}{||\theta_{pred}||}", leftmargin=8mm) 
+    return plot(1:epochs, acc_vec, seriestype = :scatter, label = label, xlabel="epoch", ylabel=L"\frac{||\sigma_{pred}-\sigma_{true}||}{||\sigma_{pred}||}", leftmargin=8mm, dpi=300) 
 end
 
 function plot_data_pred_minus_true(every_nth, pred_vec, true_vec; kwargs...)
     x=1:length(pred_vec)
-    plot(x[1:every_nth:end], pred_vec[1:every_nth:end]-true_vec[1:every_nth:end], seriestype = :scatter, kwargs...) 
+    plot(x[1:every_nth:end], pred_vec[1:every_nth:end]-true_vec[1:every_nth:end], seriestype = :scatter, dpi = 300, kwargs...) 
 end

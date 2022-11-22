@@ -53,6 +53,7 @@ for s in step_sizes
     
     error = abs( (dJ_dx_p - dJ_dx_p_diff) / dJ_dx_p_diff )
     push!(grad_errs, error)
+    
 end
 
 plot(step_sizes, grad_errs, xaxis=:log, yaxis=:log)
