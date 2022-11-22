@@ -15,12 +15,18 @@ Note -- when we say we want to use the adjoint method for parameter estimation w
 We aim to consider these questions for a few different systems. The code for each system is in it's corresponding folder (i.e., Lorenz code is in Lorenz). The systems we have considered thus far are (1) a one-dimensional forced pendulum and (2) the Lorenz model. We aim to move to a true ocean model (using Ocenanigans) eventually.
 
 Each folder contains a number of scripts. In general, all functions needed to run our experiments are contained in scripts labeled 
+
     1. create_structs.jl
+    
     2. [which model]_model.jl
+    
     3. neural_net_[which model].jl
+    
     4. create_structs.jl
+    
     5. plotting.jl
-where [which model] means to fill in with the desired one. Then experiments are run in the Julia scripts with "experiment" in the name. In general, we focused more on the lorenz model thus far. If one wants to try and run our code for the Lorenz model, one only needs to run say, parameter_experiment.jl. Download the folder titled "Lorenz," navigate to it in the terminal (or open in the directory in VSCode or your favorite editor), and then run the line 
+    
+where [which model] means to fill in with the desired one. Then experiments are run in the Julia scripts with "experiment" in the name. In general, we focused more on the lorenz model thus far. If one wants to try and run our code for the Lorenz model, one only needs to run say, parameter"underscore"experiment.jl. Download the folder titled "Lorenz," navigate to it in the terminal (or open in the directory in VSCode or your favorite editor), and then run the line 
 
 ```julia
 include("parameter_experiment.jl"
