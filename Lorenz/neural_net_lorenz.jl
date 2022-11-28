@@ -218,10 +218,23 @@ function score(data_loader, model, device)
 end
 
 
+# This function trains a neural network given a dataset of trajectories
+# Input: 
+#       trajectories - an array of Lorenz trajectories, each trajectory being an input
+#                      layer to the neural network
+#       params - a vector of Lorenz model parameters (sigma, rho, or beta) 
+#                of interest. The neural network should, given a trajectory,
+#                determine the corresponding value of the parameter.
+#       args - a struct containing additional variables used in training (hyperparameters)
+# Output:
+#       {train,test}_data - the test and training data, respectively
+#       predicted_params_{train,test} - the predicted parameters given train and
+#                                       test data, respectively
+#       {train,test}_acc_vec - vectors giving the accuracy of training and testing,
+#                                       respectively
 function train(trajectories, params, args)
 
-    # removing this piece broke the code even though we never run on a GPU, 
-    # so just leaving it here 
+    # if available use gpu, else use cpu
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
         CUDA.allowscalar(false)
@@ -231,25 +244,23 @@ function train(trajectories, params, args)
         device = cpu
     end
 
-    # Load Data
+    # Partition data into train, test, and validation
     train_data, test_data, = batch_data(trajectories, params, args)
 
-    ## Construct model
+    # Construct model
     model = args.model(length(train_data.data[1][:,1])) |> device
     model_params = Flux.params(model) ## model's trainable parameters
 
-    loss(x,y) = mse( x, y )
-
-    ## Training
-
+    # Training
     opt = ADAM(args.η)
 		
+    # initialize vectors to store output
     predicted_params_train = []
     predicted_params_test = []
-
     train_acc_vec = []
     test_acc_vec = []
 
+    # loop through epochs
     for epoch in 1:args.epochs
 
         for (x, y) in train_data
@@ -260,12 +271,13 @@ function train(trajectories, params, args)
         end
         
 
+        # score model
         train_score, ŷ_vec_train, train_acc = args.score(train_data, model, device)
         test_score, ŷ_vec_test, test_acc = args.score(test_data, model, device)
 
+        # append outputs
         push!(predicted_params_train, ŷ_vec_train)
         push!(predicted_params_test, ŷ_vec_test)
-
         push!(train_acc_vec, train_acc)
         push!(test_acc_vec, test_acc)
 
@@ -280,14 +292,24 @@ function train(trajectories, params, args)
 
 end
 
-# not currently using ridge regression, instead running a single layer model with relu
-# activation function, need to come back here and create a ridge regression model. The 
-# only difference between this training function and the one above is that this one 
-# will be using a form of linear regression rather than a NN 
+# This function performs ridge regression given a dataset of trajectories
+# !!! Not currently running ridge regression, need to fix !!!
+# Input: 
+#       trajectories - an array of Lorenz trajectories, each trajectory being an input
+#                      layer to the regression model
+#       params - a vector of Lorenz model parameters (sigma, rho, or beta) 
+#                of interest. The model should, given a trajectory, determine the 
+#                corresponding value of the parameter.
+#       args - a struct containing additional variables used in training (hyperparameters)
+# Output:
+#       {train,test}_data - the test and training data, respectively
+#       predicted_params_{train,test} - the predicted parameters given train and
+#                                       test data, respectively
+#       {train,test}_acc_vec - vectors giving the accuracy of training and testing,
+#                                       respectively
 function train_RR(trajectories, params, args; lambda = .01)
 
-    # removing this piece broke the code even though we never run on a GPU, 
-    # so just leaving it here 
+    # if available use gpu, else use cpu
     if CUDA.functional() && args.use_cuda
         @info "Training on CUDA GPU"
         CUDA.allowscalar(false)
@@ -297,25 +319,25 @@ function train_RR(trajectories, params, args; lambda = .01)
         device = cpu
     end
 
-    # Load Data
+    # Partition data into train, test, and validation
     train_data, test_data, = batch_data(trajectories, params, args)
 
-    ## Construct model
+    # Construct model
     model = args.model(length(train_data.data[1][:,1])) |> device
     model_params = Flux.params(model)               ## model's weights
 
     loss(x, y) = mse( x, y, agg=mean ) #+ lambda * sum(weights[1].^2)
  
-    ## Training
-
+    # Training
     opt = ADAM(args.η)
 		
+    # initialize vectors to store output
     predicted_params_train = []
     predicted_params_test = []
-
     train_acc_vec = []
     test_acc_vec = []
 
+    # loop through epochs
     for epoch in 1:args.epochs
 
         for (x, y) in train_data
@@ -326,12 +348,13 @@ function train_RR(trajectories, params, args; lambda = .01)
             Flux.Optimise.update!(opt, model_params, gs) ## update parameters
         end
 
+        # score model
         train_score, ŷ_vec_train, train_acc, _, _ = args.score(train_data, model, device)
         test_score, ŷ_vec_test, test_acc, _, _ = args.score(test_data, model, device)
         
+        # append outputs
         push!(predicted_params_train, ŷ_vec_train)
         push!(predicted_params_test, ŷ_vec_test)
-
         push!(train_acc_vec, train_acc)
         push!(test_acc_vec, test_acc)
 
@@ -340,7 +363,6 @@ function train_RR(trajectories, params, args; lambda = .01)
         println("Test score = $test_score, Test accuracy = $test_acc")
 
     end
-
 
     return train_data, test_data, predicted_params_train, predicted_params_test, train_acc_vec, test_acc_vec 
 
