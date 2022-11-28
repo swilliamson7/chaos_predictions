@@ -1,3 +1,6 @@
+# This script creates a plot of integration time versus sigma, where sigma 
+# is computed via the adjoint method. 
+
 using Optim, Enzyme, Random, Plots, LaTeXStrings
 
 # all necessary functions are in this script
@@ -29,15 +32,10 @@ for T in Ts
     all_states_true = generate_trajectory(T, 0.01, state0, rho_true, sigma_true, beta_true)
     data = all_states_true[:, data_steps] + 0.1 .* randn(3, length(data_steps))
 
-    # incorporate the above with the adjoint method, assuming that we have perfect knowledge of the initial 
-    # condition, rho, and beta, but an imperfect sigma (about 10% too large)
-    # all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho_true, sigma_true + .1, beta_true)
-
     sigma = grad_descent(10.3, 50, data_steps, data, 0.01, T, state0, 28.0, 8/3)
 
     push!(sigmas, sigma)
 
 end
 
-time_versus_sigma = plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", ylabel=L"\sigma", dpi = 300)
-savefig(time_versus_sigma,"time_versus_sigma.png")
+plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", ylabel=L"\sigma", dpi = 300)

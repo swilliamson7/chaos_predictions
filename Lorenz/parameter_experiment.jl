@@ -1,3 +1,9 @@
+# This script includes all the necessary packages as well as other Julia scripts with 
+# functions used for the model. Here is where a lot of the parameters in the model 
+# can be altered, and the code is set up in such a way that this is the only place 
+# necessary to change them. We do fix a random seed so that the random numbers generated 
+# (noise in data, varying sigmas) is consistent across runs 
+
 using Plots
 using Flux, Statistics
 using Flux.Data: DataLoader
@@ -18,7 +24,7 @@ include("plotting.jl")
 
 Random.seed!(420)
 N_data = 7000
-lambda = 0.01
+
 sigma = 10 .+ 5 .* randn(1, N_data)
 rho = hcat(28.0)
 beta = hcat(8/3)
@@ -80,4 +86,3 @@ pAccTest=plot_acc(epochs, test_acc_vec, "test accuracy")
 pAccTrain=plot_acc(epochs, train_acc_vec, "train accuracy")
 for_presentation = plot(pAccTest, pAccTrain, size=(600, 400))
 
-savefig(for_presentation, "accuracy_ml.png")

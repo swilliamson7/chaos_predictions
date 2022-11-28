@@ -161,51 +161,20 @@ end
 # be modified to contain more layers, different numbers of nodes, etc.
 function two_layer_model(trajectory_size; param_out=1)
     return Chain(
- 	        Dense(prod(trajectory_size), 1000, relu),
+ 	        Dense(trajectory_size, 1000, relu),
             Dense(1000, param_out)
             )
 end
 
 # Same as above except now we're using a single input layer and output layer model. 
 # this is just linear regression as we're using the identity operator to take us from 
-# input to output. For use with our ridged regression model 
+# input to output. For use with our ridge regression model 
 function ridge_regression_model(trajectory_size; param_out=1)
     return Dense(trajectory_size, param_out, relu)
 end
 
-# This function computes the loss and accuracy of predicted parameters
-# computed by our model. The loss is just the mean-squared error, and 
-# accuracy is the relative error 
-# Input: 
-#       data_loader - an object for use with Flux, contains pairs (x, y) where x is a data point and 
-#                     y is the associated parameter
-#       model - this is again a Flux object, dependent on which type of neural network we want to run.
-#               the two options available at the time of writing this are (1) a two-layer model and (2)
-#               a ridged regression model 
-#       device - another option for Flux, if gpu is available can set to run on gpu, otherwise cpu 
-# Output:
-#       loss / num - the mean squared loss between predicted parameters and true parameters
-#       ŷ_vec - all of the predicted parameters
-#       acc / num - accuracy of our prediction (the relative error between predicted and true parameter values)
-function loss_and_accuracy(data_loader, model, device)
-    acc = 0
-    loss = 0.0f0
-    num = 0
-    ŷ_vec = Matrix{Float64}(undef, 1,0)
-    for (x, y) in data_loader
-        y = reshape(y, 1, length(y))
-        x, y = device(x), device(y)
-        ŷ = model(x)
-        loss += mse(ŷ, y, agg=sum)
-        num +=  size(x)[end]
-        acc += norm(ŷ - y)/norm(y)
-        ŷ_vec=[ŷ_vec ŷ]
-    end
-    return loss / num, ŷ_vec, acc / num
-end
-
-# same as above except now computing the ridged regression loss via penalizing the 
-# weight operator via a parameter lambda, rather than the mean-squared error 
+# This function computes various quantities comparing the predicted parameters 
+# with the true parameters used to generate data points 
 # Input: 
 #       data_loader - the type of object that Flux stores the pairs (data, parameter) in
 #       model -  which of the two model options to run, i.e. NN or ridge regression
@@ -215,7 +184,7 @@ end
 #                code on a gpu yet)
 #       lambda - the hyperparameter used when computing the loss function
 # Output:
-#       loss - MSE loss with the added lambda * weights^2 for ridge regression
+#       loss - MSE loss
 #       ŷ_vec - the predicted parameter values
 #       acc - the accuracy of the predicted values, i.e. relative error
 #       squared_error - MSE of predicted versus true
@@ -311,6 +280,10 @@ function train(trajectories, params, args)
 
 end
 
+# not currently using ridge regression, instead running a single layer model with relu
+# activation function, need to come back here and create a ridge regression model. The 
+# only difference between this training function and the one above is that this one 
+# will be using a form of linear regression rather than a NN 
 function train_RR(trajectories, params, args; lambda = .01)
 
     # removing this piece broke the code even though we never run on a GPU, 
