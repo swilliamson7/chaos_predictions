@@ -38,7 +38,7 @@ which will include all of the scripts needed to run the experiment and output so
 include("adjoint_experiment.jl")
 ```
 
-All of the adjustable parameters live in the above scripts, and we aimed to set up the code such that they only need to be changed in the one location, and everything else should run fine. 
+This is currently set up to run the adjoint method on varying lengths of integration of the Lorenz system. All of the adjustable parameters live in the above scripts, and we aimed to set up the code such that they only need to be changed in the one location, and everything else should run fine. We've added comments everywhere to try and explain what each function is doing, but reach out if there are questions!
 
 # Lorenz model 
 
