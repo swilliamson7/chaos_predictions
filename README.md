@@ -48,6 +48,6 @@ The adjoint method (understandbly) fails at predicting the parameter when we int
 
 # Barotropic gyre model 
 
-It would be interesting to set up a double gyre toy model (i.e. get some eddy behavior) and perform similar experiments. 
+It would be interesting to set up a double gyre toy model (i.e. get some eddy behavior) and perform similar experiments. We'll need to be more clever about how we generate our trajectories though, as it takes substantially more time to run a toy ocean model.
 
 -----------------
