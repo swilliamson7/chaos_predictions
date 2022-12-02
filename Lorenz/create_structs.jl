@@ -24,7 +24,14 @@ end
 #       n_train - number of data points to allocate to training
 #       n_test - number of data points to allocate to test
 #       n_validation - number of data points to allocate to validation 
-#       η - the step size for our optimization algorithm 
+#       η - the step size for our optimization algorithm
+#       batchsize - as it sounds, the batch size for train/test/validation data
+#       epochs - number of epochs to train for 
+#       device - a Flux variable, decides if we want to train on gpu/cpu (for our purposes cpu)
+#       model - which of the ML models we want to use (currently between a standard NN or ridge regression)
+#       score - scores the results by returning a few values (MSE, relative error, etc.)
+# For more information on the last two functions see neural_net_lorenz.jl, the functions are defined in 
+# that script. 
 @with_kw mutable struct train_Args
     n_train::Int         # number of training data
     n_test::Int          # number of test data
