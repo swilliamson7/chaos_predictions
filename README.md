@@ -26,10 +26,10 @@ Lorenz contains a number of scripts. In general, all functions needed to run our
     
     5. plotting.jl
     
-Then experiments are run in the Julia scripts with "experiment" in the name. In general, we've mainly focused on the Lorenz model thus far. If one wants to try and run our code for the Lorenz model, one only needs to run say, parameter"underscore"experiment.jl. Download the folder titled "Lorenz," navigate to it in the terminal (or open in the directory in VSCode or your favorite editor), and then run the line 
+Then experiments are run in the Julia scripts with "experiment" in the name. In general, we've mainly focused on the Lorenz model thus far. If someone wants to try and run our code for the Lorenz model, one only needs to run say, parameter"underscore"experiment.jl. Download the folder titled "Lorenz," navigate to it in the terminal (or open in the directory in VSCode or your favorite editor), and then run the line 
 
 ```julia
-include("parameter_experiment.jl"
+include("parameter_experiment.jl")
 ```
 
 which will include all of the scripts needed to run the experiment and output some resulting plots showing test parameters versus the predicted values. Same goes for running the adjoint, just include the file
