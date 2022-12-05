@@ -44,7 +44,6 @@ Random.seed!(420)           # fixes a random seed
 # dt = 0.001                  # dt 
 # state0=[1.0;0.0;0.0]        # initial value for the trajectories
 # epochs = 5
-# model = ridge_regression_model
 # sigma=10.0
 # rho=28.0
 # beta=8/3
