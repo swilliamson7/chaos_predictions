@@ -32,13 +32,30 @@ Then experiments are run in the Julia scripts with "experiment" in the name. In 
 include("parameter_experiment.jl")
 ```
 
-which will include all of the scripts needed to run the experiment and output some resulting plots showing test parameters versus the predicted values. Same goes for running the adjoint, just include the file
+which will include all of the scripts needed to run the neural net experiment and output some resulting plots showing test parameters versus the predicted values. Same goes for running the adjoint, we first include the file
 
 ```julia
 include("adjoint_experiment.jl")
 ```
 
-This is currently set up to run the adjoint method on varying lengths of integration of the Lorenz system. All of the adjustable parameters live in the above scripts, and we aimed to set up the code such that they only need to be changed in the one location, and everything else should run fine. We've added comments everywhere to try and explain what each function is doing, but reach out if there are questions!
+which initializes all of the scripts and functions we need. Then, as an example run, 
+
+```julia
+x0 = [1.0, 0.0, 0.0]               
+rho = 28.0                           
+sigma = 10.0                        
+sigma_guess = 10.3 
+beta = 8/3 
+every_nth = 2 
+Ts = [100 + 10*k for k = 0:21]
+
+sigmas = adjoint_experiment(state0, rho, sigma, sigma_guess, beta, every_nth, Ts)
+
+plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", ylabel=L"\sigma", dpi = 300)
+
+```
+
+This will return a plot of integration time versus $\sigma$. The adjoint method is currently only setup to find $\sigma$, will be updated soon. 
 
 # Lorenz model 
 
