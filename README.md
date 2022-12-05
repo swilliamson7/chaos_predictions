@@ -34,7 +34,7 @@ We ran two types of experiments with the Lorenz model thus far. The first was si
 
 The adjoint method (understandbly) fails at predicting the parameter when we integrate the model for a long time. On the other hand, machine learning predicts the parameter reliably, at least under the specifics of our experiments (relatively low noise, integrated for 500 steps, etc.) There are plenty of other options to play around with to see how consistently the method performs, and we've only really scratched the surface. 
 
-If someone wants to try and run our code using the adjoint method of parameter estimation for the Lorenz model, an example case is given below: 
+If someone wants to try and run our ML code to estimate a parameter for the Lorenz model, an example case is given below: 
 
 ```julia
 include("parameter_experiment.jl")
@@ -69,15 +69,11 @@ plot(pAccTest, pAccTrain, size=(600, 400))
 
 ```
 
-This will return a plot of epoch vs the relative error of the chosen unknown parameter. Same goes for running the adjoint, we first include the file
+This will return a plot of epoch vs the relative error of the chosen unknown parameter. Same goes for running the adjoint. If we instead want to estimate a parameter using the adjoint method, an example case is below: 
 
 ```julia
 include("adjoint_experiment.jl")
-```
 
-which initializes all of the scripts and functions we need. Then, as an example run, 
-
-```julia
 x0 = [1.0, 0.0, 0.0]               
 rho = 28.0                           
 sigma = 10.0                        
@@ -92,7 +88,7 @@ plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", y
 
 ```
 
-This will return a plot of integration time versus $\sigma$. The adjoint method is currently only setup to find $\sigma$, will be updated soon. 
+This will return a plot of integration time versus $\sigma$. The adjoint method is currently only setup to find $\sigma$, will be updated soon to allow for other parameter choices. 
 
 # Barotropic gyre model 
 
