@@ -26,13 +26,50 @@ Lorenz contains a number of scripts. In general, all functions needed to run our
     
     5. plotting.jl
     
-Then experiments are run in the Julia scripts with "experiment" in the name. In general, we've mainly focused on the Lorenz model thus far. If someone wants to try and run our code for the Lorenz model, one only needs to run say, parameter"underscore"experiment.jl. Download the folder titled "Lorenz," navigate to it in the terminal (or open in the directory in VSCode or your favorite editor), and then run the line 
+Then experiments are run in the Julia scripts with "experiment" in the name. In general, we've mainly focused on the Lorenz model thus far. 
+
+# Lorenz model 
+
+We ran two types of experiments with the Lorenz model thus far. The first was simple: we generated multiple trajectories of the Lorenz model with slightly varying $\sigma$ values, gave as input to a machine learning model sparse noisy observations from these timeseries, and attempted to predict what $\sigma$ value was used to create them. The predicted $\sigma$ value was found in one of two ways, either via the adjoint method (adjoint_experiment.jl) or with machine learning. 
+
+The adjoint method (understandbly) fails at predicting the parameter when we integrate the model for a long time. On the other hand, machine learning predicts the parameter reliably, at least under the specifics of our experiments (relatively low noise, integrated for 500 steps, etc.) There are plenty of other options to play around with to see how consistently the method performs, and we've only really scratched the surface. 
+
+If someone wants to try and run our code using the adjoint method of parameter estimation for the Lorenz model, an example case is given below: 
 
 ```julia
 include("parameter_experiment.jl")
+
+N_data = 7000               # determines how many trajectories to generate
+T = 500                     # how long to integrate the model 
+dt = 0.001                  # dt 
+state0=[1.0;0.0;0.0]        # initial value for the trajectories
+epochs = 5                  # how many epochs to train for 
+sigma=10.0                  
+rho=28.0
+beta=8/3
+perturbed_param_string="beta"       # which parameter we want to predict, needs to be given as a string 
+every_nth = 75                      # which points in the trajectories to use as data
+
+train_data, test_data, predicted_params_train, predicted_params_test, train_acc_vec, test_acc_vec = parameter_experiment(N_data, 
+                                                                                                                         T, 
+                                                                                                                         dt, 
+                                                                                                                         state0, 
+                                                                                                                         every_nth,
+                                                                                                                         sigma, 
+                                                                                                                         rho, 
+                                                                                                                         beta, 
+                                                                                                                         perturbed_param_string, 
+                                                                                                                         epochs 
+)
+
+# plot accuracy
+pAccTest=plot_acc(epochs, test_acc_vec, "test accuracy")
+pAccTrain=plot_acc(epochs, train_acc_vec, "train accuracy")
+plot(pAccTest, pAccTrain, size=(600, 400))
+
 ```
 
-which will include all of the scripts needed to run the neural net experiment and output some resulting plots showing test parameters versus the predicted values. Same goes for running the adjoint, we first include the file
+This will return a plot of epoch vs the relative error of the chosen unknown parameter. Same goes for running the adjoint, we first include the file
 
 ```julia
 include("adjoint_experiment.jl")
@@ -56,12 +93,6 @@ plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", y
 ```
 
 This will return a plot of integration time versus $\sigma$. The adjoint method is currently only setup to find $\sigma$, will be updated soon. 
-
-# Lorenz model 
-
-We ran two types of experiments with the Lorenz model thus far. The first was simple: we generated multiple trajectories of the Lorenz model with slightly varying $\sigma$ values, gave as input to a machine learning model sparse noisy observations from these timeseries, and attempted to predict what $\sigma$ value was used to create them. The predicted $\sigma$ value was found in one of two ways, either via the adjoint method (adjoint_experiment.jl) or with machine learning. 
-
-The adjoint method (understandbly) fails at predicting the parameter when we integrate the model for a long time. On the other hand, machine learning predicts the parameter reliably, at least under the specifics of our experiments (relatively low noise, integrated for 500 steps, etc.) There are plenty of other options to play around with to see how consistently the method performs, and we've only really scratched the surface. 
 
 # Barotropic gyre model 
 
