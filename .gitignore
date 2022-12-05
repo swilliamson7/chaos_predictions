@@ -5,3 +5,5 @@ src/.DS_Store
 src/python/neuralnets/lightning_logs
 src/python/neuralnets/checkpoints
 src/julia/experiment_trial_1/
+Lorenz/neural_net_lorenz_for_debugging.jl
+Lorenz/for_debugging.jl

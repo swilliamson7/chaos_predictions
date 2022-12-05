@@ -36,7 +36,7 @@ step_sizes = [1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 
 all_states_adjoint, adjoint_variables = adjoint(data_steps, data, dt, T, state0, rho_true, x1, beta_true)
 
 J1 = data_misfit(all_states_adjoint, all_states_true, data_steps)
-g = gradient(adjoint_variables, all_states_adjoint, T)
+g = gradient(adjoint_variables, all_states_adjoint, dt, T)
 dJ_dx_p = dot(g, p)
 
 grad_errs = []

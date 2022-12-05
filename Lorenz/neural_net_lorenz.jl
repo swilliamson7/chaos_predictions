@@ -37,29 +37,44 @@ function generate_dataset(s::generate_dataset_Args)
     # initializes storage for all of the trajectories, this is a three-dimensional
     # matrix 
     all_trajectories = zeros(3, T, N_data)
-
-    # determine which parameter is preserved by checking which matrix length exceeds 1
+    
+    # determine which parameter is perturbed by checking which matrix length exceeds 1
     param_strs = ["rho";"sigma";"beta"]
     is_perturbed = ([length(rho);length(sigma);length(beta)] .> (1,1,1)) 
-    param_pert = param_strs[is_perturbed][1] 
-    param_unpert1 = param_strs[.!is_perturbed][1]
-    param_unpert2 = param_strs[.!is_perturbed][2]
 
+    param_pert = param_strs[is_perturbed][1] 
+  
     # this for loops runs over all of the perturbed parameters and for each one generates 
     # a trajectory of length T. They're all stored in the variable all_trajectories
     for k = 1:N_data
-        # hacky - sets [param]_indexed=[param][i] where i=k if perturbed, i=1 else }
-        eval(Meta.parse(param_pert * "_indexed=" * param_pert * "[" * string(k) * "]"))
-        eval(Meta.parse(param_unpert1 * "_indexed=" * param_unpert1 * "[1]"))
-        eval(Meta.parse(param_unpert2 * "_indexed=" * param_unpert2 * "[1]"))
-        trajectory=generate_trajectory(T,
-                                       dt,
-                                       state0,
-                                       rho_indexed,
-                                       sigma_indexed,
-                                       beta_indexed)
-        #trajectory = generate_trajectory(T, dt, state0, gen_traj_args)
-        all_trajectories[:, :, k] = trajectory
+        if param_pert == "sigma"
+            trajectory=generate_trajectory(T,
+                                        dt,
+                                        state0,
+                                        rho[1],
+                                        sigma[k],
+                                        beta[1]
+        )
+            all_trajectories[:, :, k] = trajectory
+        elseif param_pert == "rho" 
+            trajectory=generate_trajectory(T,
+                                        dt,
+                                        state0,
+                                        rho[k],
+                                        sigma[1],
+                                        beta[1]
+        )
+            all_trajectories[:, :, k] = trajectory          
+        elseif param_pert == "beta" 
+            trajectory=generate_trajectory(T,
+                                        dt,
+                                        state0,
+                                        rho[1],
+                                        sigma[1],
+                                        beta[k]
+        )
+            all_trajectories[:, :, k] = trajectory
+        end
      end
 
     return all_trajectories 
@@ -72,26 +87,41 @@ end
 function generate_dataset(N_data, T, dt, state0, rho, sigma, beta)
     all_trajectories = zeros(3, T, N_data)
 
-    # determine which parameter is preserved by checking which matrix length exceeds 1
+    # determine which parameter is perturbed by checking which matrix length exceeds 1
     param_strs = ["rho";"sigma";"beta"]
     is_perturbed = ([length(rho);length(sigma);length(beta)] .> (1,1,1)) 
     param_pert = param_strs[is_perturbed][1] 
-    param_unpert1 = param_strs[.!is_perturbed][1]
-    param_unpert2 = param_strs[.!is_perturbed][2]
 
     for k = 1:N_data
-        # hacky - sets [param]_indexed=[param][i] where i=k if perturbed, i=1 else }
-        eval(Meta.parse(param_pert * "_indexed=" * param_pert * "[" * string(k) * "]"))
-        eval(Meta.parse(param_unpert1 * "_indexed=" * param_unpert1 * "[1]"))
-        eval(Meta.parse(param_unpert2 * "_indexed=" * param_unpert2 * "[1]"))
-        trajectory=generate_trajectory(T,
-                                       dt,
-                                       state0,
-                                       rho_indexed,
-                                       sigma_indexed,
-                                       beta_indexed)
-        #trajectory = generate_trajectory(T, dt, state0, gen_traj_args)
+        if param_pert == "sigma"
+            trajectory=generate_trajectory(T,
+                                        dt,
+                                        state0,
+                                        rho[1],
+                                        sigma[k],
+                                        beta[1]
+        )
         all_trajectories[:, :, k] = trajectory
+        elseif param_pert == "rho" 
+            trajectory=generate_trajectory(T,
+                                        dt,
+                                        state0,
+                                        rho[k],
+                                        sigma[1],
+                                        beta[1]
+        )
+        all_trajectories[:, :, k] = trajectory
+        elseif param_pert == "beta" 
+            trajectory=generate_trajectory(T,
+                                        dt,
+                                        state0,
+                                        rho[1],
+                                        sigma[1],
+                                        beta[k]
+        )
+        all_trajectories[:, :, k] = trajectory
+        end
+    
      end
 
     return all_trajectories 
@@ -153,7 +183,7 @@ function batch_data(trajectories, params, Args)
     test_data = DataLoader((x_test, y_test), batchsize=Args.batchsize)
     validation_data = DataLoader((x_validation, y_validation), batchsize=Args.batchsize)
 
-    return train_data, test_data, validation_data
+    return train_data, test_data
 end
 
 # This is where we actually begin to build a neural net. This function is for if we want to run a 
@@ -245,7 +275,7 @@ function train(trajectories, params, args)
     end
 
     # Partition data into train, test, and validation
-    train_data, test_data, = batch_data(trajectories, params, args)
+    train_data, test_data = batch_data(trajectories, params, args)
 
     # Construct model
     model = args.model(length(train_data.data[1][:,1])) |> device
@@ -272,8 +302,8 @@ function train(trajectories, params, args)
         
 
         # score model
-        train_score, ŷ_vec_train, train_acc = args.score(train_data, model, device)
-        test_score, ŷ_vec_test, test_acc = args.score(test_data, model, device)
+        train_score, ŷ_vec_train, train_acc, _, _ = args.score(train_data, model, device)
+        test_score, ŷ_vec_test, test_acc, _, _ = args.score(test_data, model, device)
 
         # append outputs
         push!(predicted_params_train, ŷ_vec_train)
@@ -319,12 +349,12 @@ function train_RR(trajectories, params, args; lambda = .01)
         device = cpu
     end
 
-    # Partition data into train, test, and validation
+    # Partition data into train, test, and validation, currently not returning validation
     train_data, test_data, = batch_data(trajectories, params, args)
 
     # Construct model
     model = args.model(length(train_data.data[1][:,1])) |> device
-    model_params = Flux.params(model)               ## model's weights
+    model_params = Flux.params(model)               # model's weights
 
     loss(x, y) = mse( x, y, agg=mean ) #+ lambda * sum(weights[1].^2)
  
@@ -343,14 +373,13 @@ function train_RR(trajectories, params, args; lambda = .01)
         for (x, y) in train_data
             y = reshape(y, 1, length(y))
             x, y = device(x), device(y) ## transfer data to device
-            # gs = Flux.gradient(() -> loss(model(x), y, copy(model_params)), model_params) ## compute gradient
             gs = Flux.gradient(() -> loss(model(x), y), model_params) ## compute gradient
             Flux.Optimise.update!(opt, model_params, gs) ## update parameters
         end
 
         # score model
-        train_score, ŷ_vec_train, train_acc, _, _ = args.score(train_data, model, device)
-        test_score, ŷ_vec_test, test_acc, _, _ = args.score(test_data, model, device)
+        train_loss, ŷ_vec_train, train_acc, _, _ = args.score(train_data, model, device)
+        test_loss, ŷ_vec_test, test_acc, _, _ = args.score(test_data, model, device)
         
         # append outputs
         push!(predicted_params_train, ŷ_vec_train)
@@ -359,8 +388,8 @@ function train_RR(trajectories, params, args; lambda = .01)
         push!(test_acc_vec, test_acc)
 
         println("Epoch=$epoch")
-        println("Train score = $train_score, Train accuracy = $train_acc")
-        println("Test score = $test_score, Test accuracy = $test_acc")
+        println("Train score = $train_loss, Train accuracy = $train_acc")
+        println("Test score = $test_loss, Test accuracy = $test_acc")
 
     end
 
