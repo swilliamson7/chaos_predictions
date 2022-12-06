@@ -28,7 +28,7 @@ include("lorenz_model.jl")
 # sigma_guess = 12.0 
 # beta = 8/3 
 # every_nth = 20 
-# Ts = 100.0 
+# Ts = 100
 # sigmas = adjoint_experiment(state0, rho, sigma, sigma_guess, beta, every_nth, Ts)
 # plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", ylabel=L"\sigma", dpi = 300)
 function adjoint_experiment(state0, rho, sigma, sigma_guess, beta, every_nth, Ts)
