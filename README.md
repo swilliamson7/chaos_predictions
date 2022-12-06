@@ -82,7 +82,7 @@ beta = 8/3
 every_nth = 2 
 Ts = [100 + 10*k for k = 0:21]
 
-sigmas = adjoint_experiment(state0, rho, sigma, sigma_guess, beta, every_nth, Ts)
+sigmas = adjoint_experiment(x0, rho, sigma, sigma_guess, beta, every_nth, Ts)
 
 plot(Ts, sigmas, seriestype = :scatter, label = "", xlabel="Integration time", ylabel=L"\sigma", dpi = 300)
 
